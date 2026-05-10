@@ -1,27 +1,30 @@
 @echo off
-chcp 65001 >nul
 echo ============================================
-echo   VidGet Web - Cai dat lan dau
+echo   VidGet Web - Install dependencies
 echo ============================================
 echo.
 
-echo [1/2] Cai thu vien Python (backend)...
+echo [1/2] Installing Python packages (backend)...
 py -m pip install fastapi "uvicorn[standard]" yt-dlp python-multipart
-echo.
-
-echo [2/2] Cai thu vien Node.js (frontend)...
-cd /d "%~dp0frontend"
-where npm >nul 2>&1
 if errorlevel 1 (
-    echo [LOI] Khong tim thay npm. Cai Node.js tai: https://nodejs.org
+    echo [ERROR] pip install failed.
     pause
     exit /b 1
 )
+echo.
+
+echo [2/2] Installing Node.js packages (frontend)...
+where npm >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] npm not found. Install Node.js at: https://nodejs.org
+    pause
+    exit /b 1
+)
+cd /d "%~dp0frontend"
 npm install
 echo.
 
 echo ============================================
-echo   Cai dat hoan tat!
-echo   Chay start.bat de khoi dong app.
+echo   Done! Run start.bat to launch the app.
 echo ============================================
 pause
