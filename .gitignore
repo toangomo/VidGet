@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# yt-dlp downloads
+web/backend/downloads/
+
+# Node.js
+web/frontend/node_modules/
+web/frontend/.next/
+web/frontend/out/
+web/frontend/.env*.local
+
+# Logs & exports
+*.log
+
+# Exclude conversation export files only
+*-vidget.txt
+*-VidGet.txt
+NGON*.txt
+Toangomo*.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
