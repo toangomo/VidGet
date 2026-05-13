@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import shutil
 import threading
 import uuid
@@ -14,9 +15,12 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS: list[str] = _raw_origins.split(",") if _raw_origins else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

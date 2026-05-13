@@ -24,6 +24,9 @@ web/frontend/.next/
 web/frontend/out/
 web/frontend/.env*.local
 
+# Backend env
+web/backend/.env
+
 # Logs & exports
 *.log
 

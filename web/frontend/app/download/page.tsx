@@ -76,7 +76,7 @@ export default function DownloadPage() {
             status: "done",
             percent: 100,
             title: d.title,
-            downloadUrl: `http://localhost:8000/api/file/${job_id}`,
+            downloadUrl: `/api/file/${job_id}`,
           })
           es.close()
         } else if (d.type === "error") {
