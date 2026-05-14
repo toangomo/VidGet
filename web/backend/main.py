@@ -147,16 +147,21 @@ def _run_download(job_id: str, url: str):
         "geo_bypass": True,
         "http_headers": {
             "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/125.0.0.0 Safari/537.36"
+                "com.google.ios.youtube/19.29.1 "
+                "(iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)"
             ),
         },
-        # tv_embedded client bypasses YouTube bot/auth checks on servers
+        # ios client uses a separate API endpoint not subject to po_token/bot checks
         "extractor_args": {
-            "youtube": {"player_client": ["tv_embedded", "web"]},
+            "youtube": {"player_client": ["ios", "android", "tv_embedded"]},
         },
+        "no_playlist": True,
     }
+
+    # Use cookies file if provided (place cookies.txt next to main.py)
+    cookies_path = Path(__file__).parent / "cookies.txt"
+    if cookies_path.exists():
+        opts["cookiefile"] = str(cookies_path)
 
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -167,13 +172,16 @@ def _run_download(job_id: str, url: str):
     except Exception as e:
         job["status"] = "error"
         err = str(e)
-        # Surface a friendlier message for common yt-dlp errors
         if "Sign in" in err or "bot" in err.lower() or "429" in err:
-            err = "YouTube yêu cầu xác thực hoặc đang chặn server. Thử lại sau."
+            err = "YouTube đang chặn server. Hãy thử lại hoặc dùng link khác."
         elif "unavailable" in err.lower() or "private" in err.lower():
             err = "Video không khả dụng hoặc bị giới hạn."
         elif "ffmpeg" in err.lower():
             err = "ffmpeg không tìm thấy trên server."
+        elif "Cancelled" in err:
+            err = "Đã hủy tải xuống."
+        else:
+            err = f"Lỗi: {err[:120]}"
         job["error"] = err
 
 

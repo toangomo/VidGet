@@ -204,6 +204,61 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Stats strip ── */}
+      <div className="border-y border-white/[0.05] bg-white/[0.01] py-10 px-5">
+        <div className="max-w-2xl mx-auto grid grid-cols-3 gap-6 text-center">
+          {[
+            { value: "500+",  label: "Trang web hỗ trợ" },
+            { value: "4K",    label: "Chất lượng tối đa" },
+            { value: "0đ",    label: "Hoàn toàn miễn phí" },
+          ].map((s) => (
+            <div key={s.label}>
+              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{s.value}</p>
+              <p className="text-xs text-gray-600 mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Platform showcase ── */}
+      <section className="py-16 px-5">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-widest text-gray-700 mb-6">
+            Hỗ trợ tải từ
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {[
+              { name: "YouTube",   color: "#FF4444", desc: "Video & Shorts" },
+              { name: "TikTok",    color: "#00d4d4", desc: "Video & Story" },
+              { name: "Facebook",  color: "#4090f7", desc: "Video & Reels" },
+              { name: "Instagram", color: "#e1306c", desc: "Reels & Post" },
+              { name: "Twitter/X", color: "#1d9bf0", desc: "Video & GIF" },
+              { name: "Vimeo",     color: "#1ab7ea", desc: "HD Video" },
+              { name: "Reddit",    color: "#ff4500", desc: "Video & GIF" },
+              { name: "Dailymotion", color: "#0066dc", desc: "Video" },
+            ].map((p) => (
+              <div
+                key={p.name}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-colors"
+                style={{ borderColor: `${p.color}25`, backgroundColor: `${p.color}0d` }}
+              >
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: p.color, boxShadow: `0 0 6px ${p.color}` }}
+                />
+                <div>
+                  <p className="text-xs font-semibold text-gray-200 leading-none">{p.name}</p>
+                  <p className="text-[10px] text-gray-600 mt-0.5">{p.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[11px] text-gray-700 mt-5">
+            và hàng trăm trang khác được <span className="text-gray-500">yt-dlp</span> hỗ trợ
+          </p>
+        </div>
+      </section>
+
       {/* ── Features ── */}
       <section className="py-24 px-5">
         <div className="max-w-4xl mx-auto">
