@@ -296,9 +296,9 @@ export default function HomePage() {
       <div className="border-y border-white/[0.05] bg-white/[0.01] py-10 px-5">
         <div className="max-w-2xl mx-auto grid grid-cols-3 gap-6 text-center">
           {[
-            { value: "⚡",    label: "Tốc độ tải siêu nhanh" },
-            { value: "4K",    label: "Chất lượng tối đa" },
-            { value: "0đ",    label: "Hoàn toàn miễn phí" },
+            { value: "⚡",     label: "Tốc độ tải siêu nhanh" },
+            { value: "✨ 4K", label: "Chất lượng tối đa" },
+            { value: "🎁 0đ", label: "Hoàn toàn miễn phí" },
           ].map((s) => (
             <div key={s.label}>
               <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{s.value}</p>
