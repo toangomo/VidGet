@@ -162,9 +162,8 @@ def _run_download(job_id: str, url: str):
         "geo_bypass": True,
         "extractor_args": {
             "youtube": {
-                # tv_embedded & mweb avoid PO token requirement; ios is fast
-                "player_client": ["tv_embedded", "ios", "mweb", "web_creator"],
-                "player_skip": ["webpage", "js"],
+                # web works best with cookies; tv_embedded/mweb as fallback (no PO token)
+                "player_client": ["web", "tv_embedded", "mweb"],
             },
         },
         "no_playlist": True,
