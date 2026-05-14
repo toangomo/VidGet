@@ -117,7 +117,7 @@ export default function HomePage() {
       {/* ── Navbar ── */}
       <nav className="fixed top-0 inset-x-0 z-50 h-16 flex items-center px-6 border-b border-white/[0.05] bg-[#07070f]/80 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
-          <span className="text-xl font-bold tracking-tight">
+          <span className="text-[1.625rem] font-bold tracking-tight">
             Vid<span className="text-violet-400">Get</span>
           </span>
           <div className="flex items-center gap-1.5">
