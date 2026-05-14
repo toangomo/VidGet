@@ -34,6 +34,7 @@ DOWNLOAD_DIR = Path(__file__).parent / "downloads"
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 jobs: dict[str, dict[str, Any]] = {}
+cancel_flags: dict[str, threading.Event] = {}
 
 
 class DownloadRequest(BaseModel):
@@ -86,6 +87,17 @@ async def stream_progress(job_id: str):
     )
 
 
+@app.post("/api/cancel/{job_id}")
+async def cancel_download(job_id: str):
+    flag = cancel_flags.get(job_id)
+    if flag:
+        flag.set()
+    if job_id in jobs:
+        jobs[job_id]["status"] = "error"
+        jobs[job_id]["error"] = "Đã hủy tải xuống"
+    return {"ok": True}
+
+
 @app.get("/api/file/{job_id}")
 async def download_file(job_id: str):
     filepath = _find_video(DOWNLOAD_DIR / job_id)
@@ -106,7 +118,12 @@ def _run_download(job_id: str, url: str):
     out_dir = DOWNLOAD_DIR / job_id
     out_dir.mkdir(exist_ok=True)
 
+    cancel = threading.Event()
+    cancel_flags[job_id] = cancel
+
     def hook(d: dict):
+        if cancel.is_set():
+            raise Exception("Cancelled by user")
         if d["status"] == "downloading":
             total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
             done = d.get("downloaded_bytes", 0)
