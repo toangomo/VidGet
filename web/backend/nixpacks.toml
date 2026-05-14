@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["ffmpeg", "python312"]
+nixPkgs = ["ffmpeg", "python312", "python312Packages.pip"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt", "yt-dlp -U"]
+cmds = ["python3 -m pip install -r requirements.txt", "python3 -m yt_dlp --update"]
