@@ -29,12 +29,10 @@ web/backend/.env
 
 # Logs & exports
 *.log
+*.txt
 
-# Exclude conversation export files only
-*-vidget.txt
-*-VidGet.txt
-NGON*.txt
-Toangomo*.txt
+# TypeScript build cache
+*.tsbuildinfo
 
 # OS
 .DS_Store
