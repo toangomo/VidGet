@@ -223,11 +223,80 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Desktop App CTA ── */}
+      <section className="py-12 px-5">
+        <div className="max-w-2xl mx-auto">
+          <div
+            className="relative rounded-3xl border border-violet-500/20 overflow-hidden p-8 sm:p-10 text-center"
+            style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.12) 0%, rgba(7,7,15,0) 70%), #07070f" }}
+          >
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] bg-violet-600/[0.1] rounded-full blur-[80px] pointer-events-none" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-medium mb-5">
+                <Monitor size={11} />
+                Ứng dụng Desktop
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 tracking-tight">
+                Tải VidGet về{" "}
+                <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                  máy tính
+                </span>
+              </h2>
+              <p className="text-gray-500 text-sm leading-relaxed mb-7 max-w-md mx-auto">
+                Chạy offline, tải thẳng vào máy, không cần trình duyệt hay kết nối server. Giao diện tối đẹp, hỗ trợ hàng trăm trang web.
+              </p>
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-gray-600 mb-8">
+                {["Windows 10 / 11", "macOS 12+", "Không cần cài đặt", "Miễn phí hoàn toàn"].map((f) => (
+                  <span key={f} className="flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-violet-500/60" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap justify-center gap-3 mb-2">
+                <a
+                  href={WIN_URL}
+                  className="inline-flex items-center gap-3 px-7 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                  style={{
+                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                    boxShadow: "0 0 40px rgba(124,58,237,0.35), 0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Monitor size={18} />
+                  <span>
+                    <span className="block">Tải cho Windows</span>
+                    <span className="block text-xs font-normal opacity-60">VidGet.exe · ~31 MB</span>
+                  </span>
+                </a>
+                <a
+                  href={MAC_URL}
+                  className="inline-flex items-center gap-3 px-7 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                  style={{
+                    background: "linear-gradient(135deg, #3a3a4a, #252532)",
+                    boxShadow: "0 0 24px rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.4)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <Apple size={18} />
+                  <span>
+                    <span className="block">Tải cho macOS</span>
+                    <span className="block text-xs font-normal opacity-60">VidGet.dmg · ~60 MB</span>
+                  </span>
+                </a>
+              </div>
+              <div className="mt-6">
+                <SmartScreenGuide />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Stats strip ── */}
       <div className="border-y border-white/[0.05] bg-white/[0.01] py-10 px-5">
         <div className="max-w-2xl mx-auto grid grid-cols-3 gap-6 text-center">
           {[
-            { value: "500+",  label: "Trang web hỗ trợ" },
+            { value: "⚡",    label: "Tốc độ tải siêu nhanh" },
             { value: "4K",    label: "Chất lượng tối đa" },
             { value: "0đ",    label: "Hoàn toàn miễn phí" },
           ].map((s) => (
@@ -322,79 +391,6 @@ export default function HomePage() {
                 <p className="text-gray-600 text-sm leading-relaxed">{s.desc}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Desktop App CTA ── */}
-      <section className="py-20 px-5">
-        <div className="max-w-2xl mx-auto">
-          <div
-            className="relative rounded-3xl border border-violet-500/20 overflow-hidden p-8 sm:p-12 text-center"
-            style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.12) 0%, rgba(7,7,15,0) 70%), #07070f" }}
-          >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] bg-violet-600/[0.1] rounded-full blur-[80px] pointer-events-none" />
-            <div className="relative">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-medium mb-5">
-                <Monitor size={11} />
-                Ứng dụng Desktop
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 tracking-tight">
-                Tải VidGet về{" "}
-                <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-                  máy tính
-                </span>
-              </h2>
-              <p className="text-gray-500 text-sm leading-relaxed mb-7 max-w-md mx-auto">
-                Chạy offline, tải thẳng vào máy, không cần trình duyệt hay kết nối server. Giao diện tối đẹp, hỗ trợ hàng trăm trang web.
-              </p>
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-gray-600 mb-8">
-                {["Windows 10 / 11", "macOS 12+", "Không cần cài đặt", "Miễn phí hoàn toàn"].map((f) => (
-                  <span key={f} className="flex items-center gap-1.5">
-                    <span className="w-1 h-1 rounded-full bg-violet-500/60" />
-                    {f}
-                  </span>
-                ))}
-              </div>
-
-              {/* Download buttons */}
-              <div className="flex flex-wrap justify-center gap-3 mb-2">
-                <a
-                  href={WIN_URL}
-                  className="inline-flex items-center gap-3 px-7 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
-                  style={{
-                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                    boxShadow: "0 0 40px rgba(124,58,237,0.35), 0 2px 8px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  <Monitor size={18} />
-                  <span>
-                    <span className="block">Tải cho Windows</span>
-                    <span className="block text-xs font-normal opacity-60">VidGet.exe · ~31 MB</span>
-                  </span>
-                </a>
-                <a
-                  href={MAC_URL}
-                  className="inline-flex items-center gap-3 px-7 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
-                  style={{
-                    background: "linear-gradient(135deg, #3a3a4a, #252532)",
-                    boxShadow: "0 0 24px rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.4)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <Apple size={18} />
-                  <span>
-                    <span className="block">Tải cho macOS</span>
-                    <span className="block text-xs font-normal opacity-60">VidGet.dmg · ~60 MB</span>
-                  </span>
-                </a>
-              </div>
-
-              {/* SmartScreen guide */}
-              <div className="mt-6">
-                <SmartScreenGuide />
-              </div>
-            </div>
           </div>
         </div>
       </section>
