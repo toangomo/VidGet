@@ -25,6 +25,13 @@ pyinstaller `
   --hidden-import "tkinter" `
   --hidden-import "tkinter.font" `
   --hidden-import "tkinter.ttk" `
+  --hidden-import "encodings" `
+  --hidden-import "encodings.utf_8" `
+  --hidden-import "encodings.ascii" `
+  --hidden-import "encodings.cp1252" `
+  --hidden-import "encodings.latin_1" `
+  --hidden-import "encodings.idna" `
+  --collect-submodules encodings `
   --clean `
   --noconfirm `
   main.py
