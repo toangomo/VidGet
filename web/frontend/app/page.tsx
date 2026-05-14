@@ -224,7 +224,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Desktop App CTA ── */}
-      <section className="py-12 px-5 -mt-[120px]">
+      <section className="py-12 px-5 -mt-[90px]">
         <div className="max-w-2xl mx-auto">
           <div
             className="relative rounded-3xl border border-violet-500/20 overflow-hidden p-8 sm:p-10 text-center"
