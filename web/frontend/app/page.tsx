@@ -553,9 +553,22 @@ function JobCard({ job, onRetry, onStop }: { job: Job; onRetry: () => void; onSt
         )}
 
         {job.status === "error" && (
-          <p className="text-[11px] text-red-400/80 mt-0.5 break-words line-clamp-2">
-            {job.errorMsg || "Tải thất bại"} · Nhấn <span className="font-medium">Thử lại</span>
-          </p>
+          <>
+            <p className="text-[11px] text-red-400/80 mt-0.5 break-words line-clamp-2">
+              {job.errorMsg || "Tải thất bại"} · Nhấn <span className="font-medium">Thử lại</span>
+            </p>
+            {job.errorMsg?.includes("chặn") && (
+              <div className="mt-2 p-2.5 rounded-xl bg-amber-500/[0.06] border border-amber-500/15">
+                <p className="text-[11px] text-amber-300/70 leading-relaxed">
+                  YouTube chặn tải xuống từ server đám mây. Hãy dùng{" "}
+                  <a href={WIN_URL} className="text-violet-400 font-semibold hover:text-violet-300 transition-colors">
+                    ứng dụng desktop
+                  </a>
+                  {" "}để tải YouTube nhanh hơn, không bị giới hạn.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
