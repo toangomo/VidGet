@@ -150,7 +150,7 @@ def _run_download(job_id: str, url: str):
 
     opts = {
         "outtmpl": str(out_dir / "%(title)s.%(ext)s"),
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
         "merge_output_format": "mp4",
         "progress_hooks": [hook],
         "quiet": True,
