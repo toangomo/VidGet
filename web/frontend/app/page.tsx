@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Download, Zap, Shield, Globe, Sparkles, CheckCircle2, XCircle, RefreshCw, Square, Monitor, ChevronRight, ChevronDown, MousePointerClick, Info } from "lucide-react"
+import { Download, Zap, Shield, Globe, Sparkles, CheckCircle2, XCircle, RefreshCw, Square, Monitor, ChevronRight, ChevronDown, MousePointerClick, Info, Apple } from "lucide-react"
 
-const DESKTOP_URL = "https://github.com/toangomo/VidGet/releases/latest/download/VidGet.exe"
+const WIN_URL = "https://github.com/toangomo/VidGet/releases/latest/download/VidGet.exe"
+const MAC_URL = "https://github.com/toangomo/VidGet/releases/latest/download/VidGet-mac.dmg"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -119,13 +120,22 @@ export default function HomePage() {
           <span className="text-xl font-bold tracking-tight">
             Vid<span className="text-violet-400">Get</span>
           </span>
-          <a
-            href={DESKTOP_URL}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold border border-violet-500/25 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all duration-200"
-          >
-            <Monitor size={12} />
-            Tải ứng dụng Desktop
-          </a>
+          <div className="flex items-center gap-1.5">
+            <a
+              href={WIN_URL}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-violet-500/25 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all duration-200"
+            >
+              <Monitor size={11} />
+              Windows
+            </a>
+            <a
+              href={MAC_URL}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-violet-500/25 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/40 transition-all duration-200"
+            >
+              <Apple size={11} />
+              macOS
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -327,7 +337,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-medium mb-5">
                 <Monitor size={11} />
-                Ứng dụng Desktop — Windows
+                Ứng dụng Desktop
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 tracking-tight">
                 Tải VidGet về{" "}
@@ -339,31 +349,51 @@ export default function HomePage() {
                 Chạy offline, tải thẳng vào máy, không cần trình duyệt hay kết nối server. Giao diện tối đẹp, hỗ trợ hàng trăm trang web.
               </p>
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-gray-600 mb-8">
-                {["Windows 10 / 11", "Không cần cài đặt", "Miễn phí hoàn toàn", "Chất lượng cao nhất"].map((f) => (
+                {["Windows 10 / 11", "macOS 12+", "Không cần cài đặt", "Miễn phí hoàn toàn"].map((f) => (
                   <span key={f} className="flex items-center gap-1.5">
                     <span className="w-1 h-1 rounded-full bg-violet-500/60" />
                     {f}
                   </span>
                 ))}
               </div>
-              <a
-                href={DESKTOP_URL}
-                className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
-                style={{
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  boxShadow: "0 0 40px rgba(124,58,237,0.35), 0 2px 8px rgba(0,0,0,0.4)",
-                }}
-              >
-                <Download size={18} />
-                Tải VidGet.exe
-                <ChevronRight size={16} className="opacity-70" />
-              </a>
-              <p className="text-xs text-gray-700 mt-4 mb-8">
-                VidGet.exe · ~31 MB · Windows 10/11 · Mở lên là dùng được ngay
-              </p>
+
+              {/* Download buttons */}
+              <div className="flex flex-wrap justify-center gap-3 mb-2">
+                <a
+                  href={WIN_URL}
+                  className="inline-flex items-center gap-3 px-7 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                  style={{
+                    background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                    boxShadow: "0 0 40px rgba(124,58,237,0.35), 0 2px 8px rgba(0,0,0,0.4)",
+                  }}
+                >
+                  <Monitor size={18} />
+                  <span>
+                    <span className="block">Tải cho Windows</span>
+                    <span className="block text-xs font-normal opacity-60">VidGet.exe · ~31 MB</span>
+                  </span>
+                </a>
+                <a
+                  href={MAC_URL}
+                  className="inline-flex items-center gap-3 px-7 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                  style={{
+                    background: "linear-gradient(135deg, #3a3a4a, #252532)",
+                    boxShadow: "0 0 24px rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.4)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <Apple size={18} />
+                  <span>
+                    <span className="block">Tải cho macOS</span>
+                    <span className="block text-xs font-normal opacity-60">VidGet.dmg · ~60 MB</span>
+                  </span>
+                </a>
+              </div>
 
               {/* SmartScreen guide */}
-              <SmartScreenGuide />
+              <div className="mt-6">
+                <SmartScreenGuide />
+              </div>
             </div>
           </div>
         </div>
@@ -418,7 +448,7 @@ function SmartScreenGuide() {
         className="flex items-center gap-2 mx-auto text-xs text-gray-600 hover:text-gray-400 transition-colors"
       >
         <Info size={12} className="text-amber-500/70" />
-        Windows hiện cảnh báo khi mở? Xem hướng dẫn
+        Windows hiện cảnh báo SmartScreen? Xem hướng dẫn
         <ChevronDown size={12} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 

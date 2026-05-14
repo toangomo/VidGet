@@ -1,0 +1,69 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Upload to release tag (e.g. v1.0.0). Leave empty to skip.'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install "customtkinter>=5.2.0" "Pillow>=10.0.0" "yt-dlp>=2024.1.1" pyinstaller
+
+      - name: Build .app bundle
+        run: |
+          pyinstaller \
+            --windowed \
+            --name "VidGet" \
+            --collect-all customtkinter \
+            --collect-all yt_dlp \
+            --hidden-import "PIL._tkinter_finder" \
+            --hidden-import "PIL.ImageTk" \
+            --hidden-import "tkinter" \
+            --hidden-import "tkinter.font" \
+            --hidden-import "tkinter.ttk" \
+            --clean --noconfirm main.py
+
+      - name: Package as DMG
+        run: |
+          hdiutil create \
+            -volname "VidGet" \
+            -srcfolder "dist/VidGet.app" \
+            -ov -format UDZO \
+            "VidGet-mac.dmg"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VidGet-mac
+          path: VidGet-mac.dmg
+          retention-days: 30
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          files: VidGet-mac.dmg
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
