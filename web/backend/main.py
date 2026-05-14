@@ -150,7 +150,7 @@ def _run_download(job_id: str, url: str):
 
     opts = {
         "outtmpl": str(out_dir / "%(title)s.%(ext)s"),
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
+        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/bestvideo/bestaudio/best",
         "merge_output_format": "mp4",
         "progress_hooks": [hook],
         "quiet": True,
@@ -162,8 +162,8 @@ def _run_download(job_id: str, url: str):
         "geo_bypass": True,
         "extractor_args": {
             "youtube": {
-                # web works best with cookies; tv_embedded/mweb as fallback (no PO token)
-                "player_client": ["web", "tv_embedded", "mweb"],
+                # tv_embedded/mweb don't need PO token; web added last for when cookies are set
+                "player_client": ["tv_embedded", "mweb", "web"],
             },
         },
         "no_playlist": True,
