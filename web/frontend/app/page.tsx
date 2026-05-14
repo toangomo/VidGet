@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Download, Zap, Shield, Globe, Sparkles, CheckCircle2, XCircle, RefreshCw, Square, Monitor, ChevronRight } from "lucide-react"
+import { Download, Zap, Shield, Globe, Sparkles, CheckCircle2, XCircle, RefreshCw, Square, Monitor, ChevronRight, ChevronDown, MousePointerClick, Info } from "lucide-react"
 
 const DESKTOP_URL = "https://github.com/toangomo/VidGet/releases/latest/download/VidGet.exe"
 
@@ -323,27 +323,21 @@ export default function HomePage() {
             className="relative rounded-3xl border border-violet-500/20 overflow-hidden p-8 sm:p-12 text-center"
             style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.12) 0%, rgba(7,7,15,0) 70%), #07070f" }}
           >
-            {/* Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] bg-violet-600/[0.1] rounded-full blur-[80px] pointer-events-none" />
-
             <div className="relative">
-              {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-medium mb-5">
                 <Monitor size={11} />
                 Ứng dụng Desktop — Windows
               </div>
-
               <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 tracking-tight">
                 Tải VidGet về{" "}
                 <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
                   máy tính
                 </span>
               </h2>
-              <p className="text-gray-500 text-sm leading-relaxed mb-8 max-w-md mx-auto">
+              <p className="text-gray-500 text-sm leading-relaxed mb-7 max-w-md mx-auto">
                 Chạy offline, tải thẳng vào máy, không cần trình duyệt hay kết nối server. Giao diện tối đẹp, hỗ trợ hàng trăm trang web.
               </p>
-
-              {/* Features row */}
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-gray-600 mb-8">
                 {["Windows 10 / 11", "Không cần cài đặt", "Miễn phí hoàn toàn", "Chất lượng cao nhất"].map((f) => (
                   <span key={f} className="flex items-center gap-1.5">
@@ -352,8 +346,6 @@ export default function HomePage() {
                   </span>
                 ))}
               </div>
-
-              {/* Download button */}
               <a
                 href={DESKTOP_URL}
                 className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
@@ -366,10 +358,12 @@ export default function HomePage() {
                 Tải VidGet.exe
                 <ChevronRight size={16} className="opacity-70" />
               </a>
-
-              <p className="text-xs text-gray-700 mt-4">
+              <p className="text-xs text-gray-700 mt-4 mb-8">
                 VidGet.exe · ~31 MB · Windows 10/11 · Mở lên là dùng được ngay
               </p>
+
+              {/* SmartScreen guide */}
+              <SmartScreenGuide />
             </div>
           </div>
         </div>
@@ -385,6 +379,83 @@ export default function HomePage() {
           · Made with ♥
         </p>
       </footer>
+    </div>
+  )
+}
+
+// ── SmartScreenGuide ─────────────────────────────────────────────────────────
+
+function SmartScreenGuide() {
+  const [open, setOpen] = useState(false)
+
+  const steps = [
+    {
+      icon: <Download size={14} />,
+      label: "Tải file về",
+      desc: 'Nhấn nút "Tải VidGet.exe" ở trên. File khoảng 31 MB.',
+    },
+    {
+      icon: <Info size={14} />,
+      label: 'Windows hiện cảnh báo "Windows protected your PC"',
+      desc: 'Đây là bình thường — Windows cảnh báo tất cả phần mềm mới chưa có chữ ký số. VidGet hoàn toàn an toàn và mã nguồn mở.',
+    },
+    {
+      icon: <MousePointerClick size={14} />,
+      label: 'Nhấn "More info"',
+      desc: 'Ở cửa sổ cảnh báo màu xanh, nhấn chữ "More info" nhỏ phía dưới.',
+    },
+    {
+      icon: <ChevronRight size={14} />,
+      label: 'Nhấn "Run anyway"',
+      desc: 'Nút "Run anyway" hiện ra — nhấn vào để chạy VidGet bình thường.',
+    },
+  ]
+
+  return (
+    <div className="text-left">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 mx-auto text-xs text-gray-600 hover:text-gray-400 transition-colors"
+      >
+        <Info size={12} className="text-amber-500/70" />
+        Windows hiện cảnh báo khi mở? Xem hướng dẫn
+        <ChevronDown size={12} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="mt-4 rounded-2xl border border-amber-500/15 bg-amber-500/[0.04] p-5">
+          <p className="text-xs font-semibold text-amber-400/80 mb-4 flex items-center gap-2">
+            <Info size={12} />
+            Tại sao có cảnh báo?
+          </p>
+          <p className="text-xs text-gray-600 leading-relaxed mb-5">
+            Windows SmartScreen cảnh báo tất cả phần mềm chưa được ký bằng chứng chỉ số thương mại (code signing certificate). VidGet là phần mềm mã nguồn mở, miễn phí — hoàn toàn an toàn. Chỉ cần làm theo 4 bước dưới đây:
+          </p>
+          <div className="space-y-3">
+            {steps.map((s, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400 font-bold text-[10px]">
+                  {i + 1}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                    <span className="text-violet-400">{s.icon}</span>
+                    {s.label}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-700 mt-4 pt-3 border-t border-white/[0.05]">
+            Mã nguồn VidGet công khai tại{" "}
+            <a href="https://github.com/toangomo/VidGet" target="_blank" rel="noopener noreferrer"
+              className="text-violet-400/70 hover:text-violet-400 underline underline-offset-2">
+              github.com/toangomo/VidGet
+            </a>
+          </p>
+        </div>
+      )}
     </div>
   )
 }

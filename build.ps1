@@ -16,6 +16,8 @@ pyinstaller `
   --onefile `
   --windowed `
   --name "VidGet" `
+  --icon "VidGet.ico" `
+  --version-file "version_info.txt" `
   --collect-all customtkinter `
   --collect-all yt_dlp `
   --hidden-import "PIL._tkinter_finder" `
