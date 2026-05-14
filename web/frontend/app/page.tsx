@@ -159,7 +159,7 @@ export default function HomePage() {
           <h1 className="text-center text-4xl sm:text-5xl md:text-[58px] font-extrabold leading-[1.1] tracking-tight mb-4">
             Tải video từ{" "}
             <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-              mọi nền tảng
+              mọi nền tảng phổ biến
             </span>
           </h1>
           <p className="text-center text-gray-500 text-base mb-10">
@@ -298,7 +298,7 @@ export default function HomePage() {
           {[
             { icon: "⚡", text: "Tốc độ siêu nhanh" },
             { icon: "✨", text: "Chất lượng tối đa" },
-            { icon: "🪙", text: "Miễn phí hoàn toàn" },
+            { icon: "💰", text: "Miễn phí hoàn toàn" },
           ].map((s) => (
             <div key={s.text}>
               <p className="text-3xl mb-2">{s.icon}</p>
