@@ -1,12 +1,12 @@
-"""VidGet — Raycast/Linear/Terminal aesthetic."""
+"""VidGet Desktop — dark theme, compact single-line cards."""
 
 import os
 import threading
 import tkinter as tk
+import tkinter.font as tkfont
 from pathlib import Path
 
 import customtkinter as ctk
-from PIL import Image, ImageDraw, ImageFilter, ImageTk
 import yt_dlp
 
 # ── Palette ───────────────────────────────────────────────────────────────────
@@ -14,107 +14,81 @@ import yt_dlp
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-BG     = "#0d0d14"   # near-black with blue undertone
-S1     = "#13131e"   # surface 1
-S2     = "#191926"   # surface 2
-BORDER = "#22223a"   # border
-LINE   = "#1a1a2a"   # separator line
-ACC    = "#7c5cfc"   # electric violet
-ACC2   = "#00d4ff"   # cyan
-TEXT   = "#f0f0ff"   # primary
-DIM    = "#8888a8"   # secondary
-MUTE   = "#303050"   # muted / disabled
-OK     = "#00e676"   # success neon green
-ERR    = "#ff1744"   # error neon red
-WARN   = "#ffc400"   # warning amber
+BG      = "#07070f"
+CARD    = "#0e0e1c"
+CARD2   = "#13132a"
+BORDER  = "#1c1c32"
+BORDER2 = "#272740"
 
-PLAT = [
-    ("YouTube",   "#ff1744", "YT"),
-    ("TikTok",    "#00e5ff", "TK"),
-    ("Facebook",  "#2979ff", "FB"),
-    ("Instagram", "#f50057", "IG"),
-    ("Twitter/X", "#00b0ff",  "X"),
-    ("Khác",      "#aa00ff", "···"),
-]
-PCOLOR = {name: color for name, color, _ in PLAT}
-PSHORT = {name: short for name, color, short in PLAT}
+VIOLET  = "#7c3aed"
+VIO_LT  = "#a78bfa"
+VIO_BG  = "#2d1b69"
+VIO_H   = "#6d28d9"
+
+TEXT    = "#f1f5f9"
+TEXT2   = "#6b7280"
+TEXT3   = "#374151"
+
+OK      = "#10b981"
+ERR     = "#f87171"
+ERR_DK  = "#450a0a"
+WARN    = "#fbbf24"
+WARN_DK = "#451a03"
+
+PLAT_C = {
+    "YouTube":   "#FF4444",
+    "TikTok":    "#00d4d4",
+    "Facebook":  "#4090f7",
+    "Instagram": "#e1306c",
+    "Twitter/X": "#1d9bf0",
+    "Khác":      "#a78bfa",
+}
 
 DLDIR = Path.home() / "Downloads" / "VidGet"
 DLDIR.mkdir(parents=True, exist_ok=True)
+FONT  = "Segoe UI"
+_SPIN = ["◐", "◓", "◑", "◒"]
+_BG_RGB = (7, 7, 15)
+
+try:
+    _PATH_SHORT = "~/" + str(DLDIR.relative_to(Path.home())).replace("\\", "/")
+except ValueError:
+    _PATH_SHORT = str(DLDIR)
 
 
-# ── PIL helpers ───────────────────────────────────────────────────────────────
+# ── Colour helpers ────────────────────────────────────────────────────────────
 
-def _h(s: str):
-    s = s.lstrip("#")
-    return tuple(int(s[i:i+2], 16) for i in (0, 2, 4))
+def _hex(h: str):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-def _lerp(a, b, t):
-    return tuple(int(a[i] + (b[i]-a[i])*t) for i in range(3))
+def _tint(h: str, a: float = 0.08) -> str:
+    r, g, b = _hex(h)
+    br, bg, bb = _BG_RGB
+    return "#{:02x}{:02x}{:02x}".format(
+        int(br+(r-br)*a), int(bg+(g-bg)*a), int(bb+(b-bb)*a))
 
-def _dim_hex(h: str, f: float = 0.18) -> str:
-    r, g, b = _h(h)
-    return f"#{int(r*f):02x}{int(g*f):02x}{int(b*f):02x}"
-
-
-def header_canvas_bg(w: int, h: int) -> ImageTk.PhotoImage:
-    """Flat dark with a 1-px electric accent line at the bottom."""
-    img = Image.new("RGB", (w, h), _h(BG))
-    # Faint violet gradient only in top-right corner
-    glow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(glow)
-    d.ellipse([w - 320, -120, w + 60, h + 60], fill=(124, 92, 252, 22))
-    glow = glow.filter(ImageFilter.GaussianBlur(55))
-    img.paste(glow, mask=glow.split()[3])
-    # Bottom accent line: violet → cyan gradient
-    ld = ImageDraw.Draw(img)
-    for x in range(w):
-        t = x / max(w - 1, 1)
-        c = _lerp(_h(ACC), _h(ACC2), t)
-        ld.point((x, h - 1), fill=c)
-    return ImageTk.PhotoImage(img)
+def _shade(h: str, f: float) -> str:
+    r, g, b = _hex(h)
+    return "#{:02x}{:02x}{:02x}".format(
+        min(255,int(r*f)), min(255,int(g*f)), min(255,int(b*f)))
 
 
-def make_logo_icon(sz: int = 44) -> ImageTk.PhotoImage:
-    """Square icon: gradient bg, bold ▼ mark."""
-    pad = 6
-    tot = sz + pad * 2
-    base = Image.new("RGB", (sz, sz))
-    d = ImageDraw.Draw(base)
-    for y in range(sz):
-        t = y / sz
-        base.paste(Image.new("RGB", (sz, 1), _lerp(_h("#9b6bff"), _h("#5b30d6"), t)), (0, y))
+# ── Utilities ─────────────────────────────────────────────────────────────────
 
-    mask = Image.new("L", (sz, sz), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, sz-1, sz-1], radius=sz//5, fill=255)
+def detect_platform(url: str) -> str:
+    u = url.lower()
+    if "youtube.com" in u or "youtu.be" in u: return "YouTube"
+    if "tiktok.com" in u:                      return "TikTok"
+    if "facebook.com" in u or "fb.watch" in u: return "Facebook"
+    if "instagram.com" in u:                   return "Instagram"
+    if "twitter.com" in u or "x.com" in u:    return "Twitter/X"
+    return "Khác"
 
-    icon = Image.new("RGBA", (tot, tot), (0, 0, 0, 0))
-    icon.paste(base.convert("RGBA"), (pad, pad), mask)
-
-    # Glow
-    gl = icon.filter(ImageFilter.GaussianBlur(pad))
-    r, g, b, a = gl.split()
-    gl = Image.merge("RGBA", (r, g, b, a.point(lambda x: int(x * 0.5))))
-    out = Image.new("RGBA", (tot, tot), (0, 0, 0, 0))
-    out.paste(gl, mask=gl.split()[3])
-    out.paste(icon, mask=icon.split()[3])
-
-    # V lettermark
-    fd = ImageDraw.Draw(out)
-    cx, cy = tot // 2, tot // 2 + 1
-    arm = sz * 0.2
-    lw = max(3, sz // 8)
-    fd.line([(cx - arm, cy - arm * 0.8), (cx, cy + arm * 0.65)], fill=(255,255,255,240), width=lw)
-    fd.line([(cx + arm, cy - arm * 0.8), (cx, cy + arm * 0.65)], fill=(255,255,255,240), width=lw)
-    return ImageTk.PhotoImage(out)
-
-
-def make_btn_glow(w: int, h: int, color: str) -> ImageTk.PhotoImage:
-    pad = 22
-    img = Image.new("RGBA", (w+pad*2, h+pad*2), (0,0,0,0))
-    ImageDraw.Draw(img).rounded_rectangle(
-        [pad, pad, w+pad, h+pad], radius=10, fill=(*_h(color), 110))
-    return ImageTk.PhotoImage(img.filter(ImageFilter.GaussianBlur(16)))
+def fmt_size(b: int) -> str:
+    if not b: return ""
+    if b < 1_048_576: return f"{b/1024:.0f} KB"
+    return f"{b/1_048_576:.1f} MB"
 
 
 # ── Download task ─────────────────────────────────────────────────────────────
@@ -124,371 +98,396 @@ class DownloadTask:
         self.url = url; self.platform = platform
         self.title = "Đang lấy thông tin…"; self.status = "pending"
         self.cancel = threading.Event()
+        self.filesize = 0; self.ext = ""
 
 
-# ── Download row (flat list style) ───────────────────────────────────────────
+# ── Download card — compact single-line row (~34 px) ─────────────────────────
 
-class DownloadRow(tk.Frame):
-    """A flat list row — no card border, just a bottom separator line."""
+class DownloadCard(ctk.CTkFrame):
+    """
+    Layout (~34 px fixed height):
+    ▌ [● YouTube]  Title text…         45% · 2.1 MB/s  [◑]  [■ Stop]
+    ── 2 px progress bar ────────────────────────────────────────────
+    """
 
     def __init__(self, parent, task: DownloadTask, app, **kw):
-        super().__init__(parent, bg=BG, **kw)
-        self.task  = task
-        self.app   = app
-        self.color = PCOLOR.get(task.platform, ACC)
-        self._pulse_job = None
-        self._pulse_val = 0
+        col = PLAT_C.get(task.platform, VIOLET)
+        super().__init__(parent,
+                         fg_color=_tint(col, 0.06),
+                         corner_radius=8,
+                         border_width=1,
+                         border_color=_tint(col, 0.22), **kw)
+        self.configure(height=45)
+        self.pack_propagate(False)
+        self.task = task; self.app = app; self.color = col
+        self._spin_idx = 0;  self._spinning = False
+        self._dot_phase = 0; self._anim_on  = True
+        self._anim_pos = 0.0; self._anim_dir = 0.04
+        self._bar_color = col
         self._build()
+        self._bar_tick(); self._anim_dots(); self._spin_start()
+
+    # ── Build ─────────────────────────────────────────────────────────────────
 
     def _build(self):
-        self.grid_columnconfigure(2, weight=1)
+        # 2 px progress bar — frame-based so height is guaranteed
+        bar_wrap = ctk.CTkFrame(self, height=2, fg_color=BORDER, corner_radius=0)
+        bar_wrap.pack(side="bottom", fill="x")
+        bar_wrap.pack_propagate(False)
+        self._bar_fill = ctk.CTkFrame(bar_wrap, fg_color=self.color, corner_radius=0)
+        self._bar_fill.pack_propagate(False)
+        self._bar_fill.place(x=0, y=0, relheight=1, relwidth=0)
 
-        # ── Status dot (animated canvas) ──
-        self._dot_cv = tk.Canvas(self, width=14, height=14,
-                                  bg=BG, highlightthickness=0)
-        self._dot_cv.grid(row=0, column=0, padx=(14, 0), pady=14)
-        self._dot = self._dot_cv.create_oval(2, 2, 12, 12,
-                                              fill=MUTE, outline="")
-        self._start_pulse()
+        row = ctk.CTkFrame(self, fg_color="transparent")
+        row.pack(fill="both", expand=True)
 
-        # ── Platform tag ──
-        short = PSHORT.get(self.task.platform, "?")
-        tag = tk.Label(self, text=short,
-            bg=_dim_hex(self.color, 0.2), fg=self.color,
-            font=("Consolas", 9, "bold"), padx=6, pady=2,
-            relief="flat")
-        tag.grid(row=0, column=1, padx=(10, 0), pady=(15, 14), sticky="n")
+        # 3 px left accent stripe
+        stripe = ctk.CTkFrame(row, width=3, fg_color=self.color, corner_radius=0)
+        stripe.pack(side="left", fill="y")
+        stripe.pack_propagate(False)
 
-        # ── Title + progress ──
-        center = tk.Frame(self, bg=BG)
-        center.grid(row=0, column=2, padx=(10, 8), pady=(12, 10), sticky="ew")
-        center.grid_columnconfigure(0, weight=1)
+        # Platform pill — full name, auto-width
+        pill = ctk.CTkFrame(row, height=22, corner_radius=6,
+                            fg_color=_tint(self.color, 0.14),
+                            border_width=1, border_color=_tint(self.color, 0.30))
+        pill.pack(side="left", padx=(8, 0), pady=5)
+        ctk.CTkLabel(pill, text="●",
+            font=ctk.CTkFont(size=7), text_color=self.color,
+            fg_color="transparent").pack(side="left", padx=(6, 0))
+        ctk.CTkLabel(pill, text=self.task.platform,
+            font=ctk.CTkFont(family=FONT, size=12, weight="bold"),
+            text_color=self.color, fg_color="transparent",
+        ).pack(side="left", padx=(3, 7), pady=2)
 
-        self._title = tk.Label(center, text=self.task.title,
-            bg=BG, fg=TEXT, font=("Segoe UI", 12, "bold"),
-            anchor="w", justify="left")
-        self._title.grid(row=0, column=0, columnspan=2, sticky="ew")
+        # ── Right block: icon + button (pack BEFORE title) ────────────────────
+        rblock = ctk.CTkFrame(row, fg_color="transparent")
+        rblock.pack(side="right", padx=8, pady=5)
 
-        self._bar_frame = tk.Frame(center, bg=BG)
-        self._bar_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        # Status icon
+        self._icon = ctk.CTkLabel(rblock,
+            text=_SPIN[0], width=22, height=22,
+            font=ctk.CTkFont(family=FONT, size=14, weight="bold"),
+            text_color=VIO_LT, fg_color="transparent")
+        self._icon.pack(side="left", padx=(0, 6))
 
-        self._bar_bg = tk.Frame(self._bar_frame, bg=MUTE, height=2)
-        self._bar_bg.pack(fill="x")
+        # Button slot — fixed size, buttons placed via place()
+        self._slot = ctk.CTkFrame(rblock, fg_color="transparent", width=100, height=28)
+        self._slot.pack(side="left")
+        self._slot.pack_propagate(False)
 
-        self._bar_fill = tk.Frame(self._bar_bg, bg=self.color, height=2, width=0)
-        self._bar_fill.place(x=0, y=0, relheight=1)
+        def _mkbtn(text, bg, fg, hover, cmd, brd=None):
+            return ctk.CTkButton(self._slot, text=text,
+                width=96, height=26, corner_radius=13,
+                font=ctk.CTkFont(family=FONT, size=12, weight="bold"),
+                fg_color=bg, hover_color=hover, text_color=fg,
+                border_width=1 if brd else 0,
+                border_color=brd or bg, command=cmd)
 
-        self._bar_bg.bind("<Configure>", self._sync_bar)
-        self._bar_pct = 0.0
+        self._stop_btn  = _mkbtn("■  Stop",    ERR_DK, ERR,    "#601515", self._stop,
+                                  brd=_tint(ERR, 0.28))
+        self._open_btn  = _mkbtn("📁  Mở",     VIOLET, "white", VIO_H,    self._open)
+        self._retry_btn = _mkbtn("↺  Thử lại", WARN_DK, WARN,  "#5c2a08", self._retry,
+                                  brd=_tint(WARN, 0.28))
+        self._stop_btn.place(relx=0.5, rely=0.5, anchor="center")
 
-        self._sub = tk.Label(center, text="Đang chuẩn bị…",
-            bg=BG, fg=DIM, font=("Consolas", 10), anchor="w")
-        self._sub.grid(row=2, column=0, sticky="ew", pady=(3, 0))
+        # Status text (right of title, fixed width — pack BEFORE title)
+        self._status = ctk.CTkLabel(row,
+            text="Đang chuẩn bị", width=160, anchor="e",
+            font=ctk.CTkFont(family=FONT, size=13),
+            text_color=TEXT3, fg_color="transparent")
+        self._status.pack(side="right", padx=(0, 6), pady=5)
 
-        # ── Action buttons ──
-        self._btn_area = tk.Frame(self, bg=BG)
-        self._btn_area.grid(row=0, column=3, padx=(0, 14), pady=(14, 14), sticky="n")
+        # Title — fills remaining space
+        self._title = ctk.CTkLabel(row,
+            text=self.task.title, anchor="w",
+            font=ctk.CTkFont(family=FONT, size=14, weight="bold"),
+            text_color=TEXT, fg_color="transparent")
+        self._title.pack(side="left", fill="x", expand=True, padx=(8, 4), pady=5)
 
-        self._stop_btn  = self._mk_btn("✕  Stop", ERR,    self._stop)
-        self._open_btn  = self._mk_btn("⌂  Open", ACC2,   self._open)
-        self._retry_btn = self._mk_btn("↺  Retry", WARN,  self._retry)
+    # ── Bar helper ────────────────────────────────────────────────────────────
 
-        self._stop_btn.pack()
+    def _set_bar(self, val: float, color: str = None):
+        c = color or self._bar_color
+        if c != self._bar_color:
+            self._bar_fill.configure(fg_color=c)
+            self._bar_color = c
+        self._bar_fill.place(relwidth=max(0.0, min(1.0, val)), relheight=1)
 
-        # ── Bottom separator ──
-        tk.Frame(self, bg=LINE, height=1).grid(
-            row=1, column=0, columnspan=4, sticky="ew")
+    # ── Animations ────────────────────────────────────────────────────────────
 
-    def _mk_btn(self, text, color, cmd):
-        return tk.Button(self._btn_area, text=text, bg=_dim_hex(color, 0.16),
-            fg=color, font=("Segoe UI", 10), relief="flat", padx=10, pady=4,
-            activebackground=_dim_hex(color, 0.28), activeforeground=color,
-            cursor="hand2", command=cmd, bd=0)
+    def _bar_tick(self):
+        if not self._anim_on: return
+        self._anim_pos += self._anim_dir
+        if   self._anim_pos >= 1.0: self._anim_pos = 1.0; self._anim_dir = -0.04
+        elif self._anim_pos <= 0.0: self._anim_pos = 0.0; self._anim_dir =  0.04
+        try:
+            self._set_bar(self._anim_pos)
+            self.after(25, self._bar_tick)
+        except Exception: pass
 
-    def _sync_bar(self, e=None):
-        w = self._bar_bg.winfo_width()
-        self._bar_fill.place(x=0, y=0, relheight=1,
-                              width=max(0, int(w * self._bar_pct)))
+    def _anim_dots(self):
+        if not self._anim_on: return
+        phases = ["Đang chuẩn bị", "Đang chuẩn bị ·",
+                  "Đang chuẩn bị ··", "Đang chuẩn bị ···"]
+        self._dot_phase = (self._dot_phase + 1) % 4
+        try:
+            self._status.configure(text=phases[self._dot_phase])
+            self.after(360, self._anim_dots)
+        except Exception: pass
 
-    # ── Pulse animation ───────────────────────────────────────────────────────
+    def _spin_start(self):
+        self._spinning = True; self._spin_step()
 
-    def _start_pulse(self):
-        self._pulse_val = (self._pulse_val + 1) % 20
-        bright = self._pulse_val < 10
-        if self.task.status in ("pending", "downloading"):
-            color = self.color if bright else _dim_hex(self.color, 0.5)
-            self._dot_cv.itemconfig(self._dot, fill=color)
-            self._pulse_job = self.after(90, self._start_pulse)
-
-    def _stop_pulse(self):
-        if self._pulse_job:
-            self.after_cancel(self._pulse_job)
-            self._pulse_job = None
+    def _spin_step(self):
+        if not self._spinning: return
+        self._spin_idx = (self._spin_idx + 1) % 4
+        try:
+            self._icon.configure(text=_SPIN[self._spin_idx])
+            self.after(110, self._spin_step)
+        except Exception: pass
 
     # ── State updates ─────────────────────────────────────────────────────────
 
     def update_title(self, t: str):
-        self._title.config(text=(t[:68]+"…") if len(t)>68 else t)
+        self._title.configure(text=(t[:55]+"…") if len(t) > 55 else t)
 
     def update_progress(self, pct: float, speed: str = ""):
-        self._bar_pct = pct / 100
-        self._sync_bar()
-        spd = f"  {speed}" if speed else ""
-        self._sub.config(text=f"{pct:05.1f}%{spd}", fg=DIM)
+        self._anim_on = False
+        self._set_bar(pct / 100)
+        spd = f" · {speed}" if speed else ""
+        self._status.configure(text=f"{pct:.0f}%{spd}", text_color=TEXT2)
 
-    def mark_success(self):
-        self._stop_pulse()
-        self._dot_cv.itemconfig(self._dot, fill=OK)
-        self._bar_pct = 1.0; self._sync_bar()
-        self._bar_fill.config(bg=OK)
-        self._sub.config(text="Done", fg=OK)
-        self._stop_btn.pack_forget()
-        self._open_btn.pack()
+    def mark_success(self, filesize: int = 0, ext: str = ""):
+        self._anim_on = self._spinning = False
+        self._set_bar(1.0, OK)
+        parts = [p for p in [ext.upper() if ext else "", fmt_size(filesize)] if p]
+        self._status.configure(
+            text=" · ".join(parts) if parts else "Hoàn thành",
+            text_color=OK)
+        self._icon.configure(text="✓", text_color=OK,
+            font=ctk.CTkFont(family=FONT, size=16, weight="bold"))
+        self._stop_btn.place_forget()
+        self._open_btn.place(relx=0.5, rely=0.5, anchor="center")
 
     def mark_failed(self, msg: str = ""):
-        self._stop_pulse()
-        self._dot_cv.itemconfig(self._dot, fill=ERR)
-        self._bar_fill.config(bg=ERR)
-        self._sub.config(text=msg or "Failed", fg=ERR)
-        self._stop_btn.pack_forget()
-        self._retry_btn.pack()
+        self._anim_on = self._spinning = False
+        self._set_bar(0.0, ERR)
+        self._status.configure(
+            text=(msg[:18]+"…") if len(msg) > 18 else (msg or "Lỗi"),
+            text_color=ERR)
+        self._icon.configure(text="✗", text_color=ERR,
+            font=ctk.CTkFont(family=FONT, size=16, weight="bold"))
+        self._stop_btn.place_forget()
+        self._retry_btn.place(relx=0.5, rely=0.5, anchor="center")
 
     # ── Actions ───────────────────────────────────────────────────────────────
 
     def _stop(self):
+        self._anim_on = self._spinning = False
         self.task.cancel.set()
-        self._stop_pulse()
-        self._dot_cv.itemconfig(self._dot, fill=MUTE)
-        self._sub.config(text="Cancelled", fg=DIM)
-        self._stop_btn.pack_forget()
+        self._set_bar(0.0, TEXT3)
+        self._status.configure(text="Đã hủy", text_color=TEXT3)
+        self._icon.configure(text="—", text_color=TEXT3,
+            font=ctk.CTkFont(family=FONT, size=14, weight="bold"))
+        self._stop_btn.place_forget()
 
     def _open(self): os.startfile(str(DLDIR))
 
     def _retry(self):
+        self._anim_on = self._spinning = True
+        self._anim_pos = 0.0; self._anim_dir = 0.04; self._dot_phase = 0
         self.task.cancel.clear(); self.task.status = "pending"
-        self._bar_pct = 0.0; self._sync_bar()
-        self._bar_fill.config(bg=self.color)
-        self._sub.config(text="Đang chuẩn bị…", fg=DIM)
-        self._dot_cv.itemconfig(self._dot, fill=MUTE)
-        self._retry_btn.pack_forget()
-        self._stop_btn.pack()
-        self._start_pulse()
-        threading.Thread(target=self.app._run_download,
-                         args=(self.task, self), daemon=True).start()
+        self.task.title = "Đang lấy thông tin…"
+        self._set_bar(0.0, self.color)
+        self._title.configure(text="Đang lấy thông tin…", text_color=TEXT)
+        self._status.configure(text="Đang chuẩn bị", text_color=TEXT3)
+        self._icon.configure(text=_SPIN[0], text_color=VIO_LT,
+            font=ctk.CTkFont(family=FONT, size=14, weight="bold"))
+        self._retry_btn.place_forget()
+        self._stop_btn.place(relx=0.5, rely=0.5, anchor="center")
+        self._bar_tick(); self._anim_dots(); self._spin_step()
+        threading.Thread(
+            target=self.app._run, args=(self.task, self), daemon=True).start()
 
 
-# ── App ───────────────────────────────────────────────────────────────────────
+# ── Main window ───────────────────────────────────────────────────────────────
 
 class VidGetApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("VidGet")
-        self.geometry("980x720")
-        self.minsize(780, 540)
+        self.geometry("936x680")
+        self.minsize(744, 520)
         self.configure(fg_color=BG)
-        self.current_platform = "YouTube"
-        self._tab_btns: dict[str, tk.Button] = {}
-        self._hdr_photo = self._icon_photo = self._glow_photo = None
         self._build()
-        self.bind("<Configure>", self._on_resize)
-
-    # ── Build ─────────────────────────────────────────────────────────────────
 
     def _build(self):
-        self._build_header()
-        self._build_platform()
-        self._build_input()
-        self._build_list()
-        self._build_usp()
+        root = ctk.CTkFrame(self, fg_color=BG)
+        root.pack(fill="both", expand=True)
+        root.grid_columnconfigure(0, weight=1)
+        root.grid_rowconfigure(2, weight=1)
 
-    # Header ──────────────────────────────────────────────────────────────────
+        self._build_topbar(root)  # row 0
+        self._build_hero(root)    # row 1
+        self._build_list(root)    # row 2
+        self._build_usp(root)     # row 3
 
-    def _build_header(self):
-        self._hdr_cv = tk.Canvas(self, height=76, bg=BG, highlightthickness=0)
-        self._hdr_cv.pack(fill="x")
-        self.after(50, self._render_header)
+    # ── Top bar: logo (left) + folder path (right) ────────────────────────────
 
-    def _render_header(self, _=None):
-        cv = self._hdr_cv
-        w, h = cv.winfo_width(), cv.winfo_height()
-        if w < 4: self.after(60, self._render_header); return
+    def _build_topbar(self, parent):
+        bar = ctk.CTkFrame(parent, fg_color="transparent")
+        bar.grid(row=0, column=0, sticky="ew", padx=36, pady=(24, 0))
+        bar.grid_columnconfigure(1, weight=1)
 
-        cv.delete("all")
-        self._hdr_photo = header_canvas_bg(w, h)
-        cv.create_image(0, 0, anchor="nw", image=self._hdr_photo)
+        # ── Logo canvas: pixel-tight "by Toangomo" below VidGet ──────────────────
+        f40  = tkfont.Font(family=FONT, size=40, weight="bold")
+        f12  = tkfont.Font(family=FONT, size=12)
+        vid_w = f40.measure("Vid")
+        asc   = f40.metrics("ascent")
+        desc  = f40.metrics("descent")
+        sm_lh = f12.metrics("linespace")
+        cv_h  = asc + desc + 3 + sm_lh
 
-        # Icon
-        self._icon_photo = make_logo_icon(44)
-        cv.create_image(30, h//2, anchor="center", image=self._icon_photo)
+        logo_cv = tk.Canvas(bar, bg=BG, bd=0, highlightthickness=0,
+                            width=vid_w + f40.measure("Get"), height=cv_h)
+        logo_cv.grid(row=0, column=0, sticky="w")
+        logo_cv.create_text(0,     0,            text="Vid",         font=f40, fill=TEXT,   anchor="nw")
+        logo_cv.create_text(vid_w, 0,            text="Get",         font=f40, fill=VIO_LT, anchor="nw")
+        logo_cv.create_text(2,     asc+desc+3,   text="by Toangomo", font=f12, fill=TEXT3,  anchor="nw")
 
-        # "VIDGET" in tight letter-spaced style
-        cv.create_text(58, h//2 - 10, text="VID", anchor="w",
-            fill=TEXT, font=("Segoe UI", 22, "bold"))
-        cv.create_text(101, h//2 - 10, text="GET", anchor="w",
-            fill=ACC, font=("Segoe UI", 22, "bold"))
+        # ── Folder path (right, vertically centred in row) ────────────────────
+        fbox = ctk.CTkFrame(bar, fg_color=CARD, corner_radius=8,
+                            border_width=1, border_color=BORDER)
+        fbox.grid(row=0, column=2, sticky="e")
 
-        cv.create_text(58, h//2 + 14, text="Video Downloader  ·  v2.0",
-            anchor="w", fill=MUTE, font=("Consolas", 9))
+        ctk.CTkLabel(fbox, text="📁",
+            font=ctk.CTkFont(size=13), fg_color="transparent",
+            text_color=TEXT3).pack(side="left", padx=(10, 0), pady=8)
+        ctk.CTkLabel(fbox, text=_PATH_SHORT,
+            font=ctk.CTkFont(family=FONT, size=12), text_color=TEXT2,
+            fg_color="transparent").pack(side="left", padx=(5, 0), pady=8)
+        ctk.CTkButton(fbox, text="Mở →",
+            width=58, height=24, corner_radius=12,
+            font=ctk.CTkFont(family=FONT, size=11, weight="bold"),
+            fg_color=VIO_BG, hover_color=_shade(VIO_BG, 1.25),
+            text_color=VIO_LT, border_width=1,
+            border_color=_tint(VIOLET, 0.40),
+            command=lambda: os.startfile(str(DLDIR)),
+        ).pack(side="left", padx=(8, 10), pady=8)
 
-        # Right: save path
-        cv.create_text(w - 14, h//2, anchor="e",
-            text=f"⌂  {DLDIR}",
-            fill=MUTE, font=("Consolas", 9))
+    # ── Hero: pill badge + heading + subtitle + input ─────────────────────────
 
-    # Platform chips ──────────────────────────────────────────────────────────
+    def _build_hero(self, parent):
+        hero = ctk.CTkFrame(parent, fg_color="transparent")
+        hero.grid(row=1, column=0, sticky="ew", padx=52, pady=(28, 0))
+        hero.grid_columnconfigure(0, weight=1)
 
-    def _build_platform(self):
-        bar = tk.Frame(self, bg=S1, height=44)
-        bar.pack(fill="x")
-        bar.pack_propagate(False)
+        # Badge pill
+        pw = ctk.CTkFrame(hero, fg_color="transparent")
+        pw.grid(row=0, column=0)
+        pill = ctk.CTkFrame(pw, fg_color=VIO_BG, corner_radius=20,
+                            border_width=1, border_color=_tint(VIOLET, 0.45))
+        pill.pack()
+        ctk.CTkLabel(pill,
+            text="✦  Miễn phí · Không đăng ký · Không quảng cáo",
+            font=ctk.CTkFont(family=FONT, size=12),
+            text_color=VIO_LT, fg_color="transparent",
+        ).pack(padx=14, pady=6)
 
-        tk.Label(bar, text="PLATFORM", bg=S1, fg=MUTE,
-            font=("Consolas", 9, "bold")).pack(side="left", padx=(16,12), pady=12)
+        # Heading — two-colour: white + violet
+        hw = ctk.CTkFrame(hero, fg_color="transparent")
+        hw.grid(row=1, column=0, pady=(12, 0))
+        ctk.CTkLabel(hw, text="Tải video từ ",
+            font=ctk.CTkFont(family=FONT, size=36, weight="bold"),
+            text_color=TEXT, fg_color="transparent").pack(side="left")
+        ctk.CTkLabel(hw, text="mọi nền tảng",
+            font=ctk.CTkFont(family=FONT, size=36, weight="bold"),
+            text_color=VIO_LT, fg_color="transparent").pack(side="left")
 
-        # thin vertical rule
-        tk.Frame(bar, bg=LINE, width=1).pack(side="left", fill="y", pady=8)
+        # Subtitle
+        ctk.CTkLabel(hero, text="Dán link — nhấn tải — xong.",
+            font=ctk.CTkFont(family=FONT, size=15),
+            text_color=TEXT2, fg_color="transparent",
+        ).grid(row=2, column=0, pady=(7, 0))
 
-        for name, color, short in PLAT:
-            btn = tk.Button(bar, text=short,
-                bg=S1, fg=DIM,
-                font=("Consolas", 10, "bold"),
-                relief="flat", padx=12, pady=6,
-                activebackground=_dim_hex(color, 0.22),
-                activeforeground=color,
-                cursor="hand2", bd=0,
-                command=lambda p=name: self._select(p))
-            btn.pack(side="left", padx=1)
-            self._tab_btns[name] = btn
+        # Input card
+        icard = ctk.CTkFrame(hero, fg_color=CARD2, corner_radius=14,
+                             border_width=1, border_color=BORDER2)
+        icard.grid(row=3, column=0, sticky="ew", pady=(18, 0))
+        icard.grid_columnconfigure(0, weight=1)
 
-        self._select("YouTube")
+        irow = ctk.CTkFrame(icard, fg_color="transparent")
+        irow.pack(fill="x", padx=8, pady=8)
+        irow.grid_columnconfigure(0, weight=1)
 
-        # Bottom border of bar
-        tk.Frame(self, bg=LINE, height=1).pack(fill="x")
-
-    # Input ───────────────────────────────────────────────────────────────────
-
-    def _build_input(self):
-        wrap = tk.Frame(self, bg=S1, height=58)
-        wrap.pack(fill="x")
-        wrap.pack_propagate(False)
-
-        # Prompt prefix
-        tk.Label(wrap, text=">_", bg=S1, fg=ACC,
-            font=("Consolas", 13, "bold")).pack(side="left", padx=(16,0))
-
-        self._entry = ctk.CTkEntry(
-            wrap,
+        self._entry = ctk.CTkEntry(irow,
             placeholder_text="Dán link video vào đây…",
-            height=36, border_width=1, border_color=BORDER,
-            fg_color=S2, corner_radius=8,
-            font=ctk.CTkFont(family="Segoe UI", size=13),
-            text_color=TEXT, placeholder_text_color=MUTE,
-        )
-        self._entry.pack(side="left", fill="x", expand=True, padx=12, pady=10)
+            height=44, border_width=0, fg_color="transparent",
+            font=ctk.CTkFont(family=FONT, size=15),
+            text_color=TEXT, placeholder_text_color=TEXT3)
+        self._entry.grid(row=0, column=0, sticky="ew", padx=(10, 8))
         self._entry.bind("<Return>", lambda _: self._download())
 
-        # Glow download button
-        BW, BH, pad = 138, 36, 16
-        self._glow_cv = tk.Canvas(wrap, width=BW+pad*2, height=BH+pad*2,
-                                   bg=S1, highlightthickness=0)
-        self._glow_cv.pack(side="right", padx=(0, 12), pady=10)
-        self._glow_photo = make_btn_glow(BW, BH, ACC)
-        self._glow_cv.create_image((BW+pad*2)//2, (BH+pad*2)//2, image=self._glow_photo)
-
-        dl = ctk.CTkButton(
-            self._glow_cv, text="DOWNLOAD  ▶",
-            width=BW, height=BH, corner_radius=8,
-            font=ctk.CTkFont(family="Consolas", size=12, weight="bold"),
-            fg_color=ACC, hover_color="#6d45e0", text_color=TEXT,
+        ctk.CTkButton(irow,
+            text="↓  Tải xuống",
+            width=148, height=44, corner_radius=22,
+            font=ctk.CTkFont(family=FONT, size=15, weight="bold"),
+            fg_color=VIOLET, hover_color=VIO_H, text_color="white",
             command=self._download,
-        )
-        self._glow_cv.create_window((BW+pad*2)//2, (BH+pad*2)//2, window=dl)
+        ).grid(row=0, column=1, padx=(0, 2))
 
-        tk.Frame(self, bg=LINE, height=1).pack(fill="x")
+    # ── Results list ──────────────────────────────────────────────────────────
 
-    # List ────────────────────────────────────────────────────────────────────
+    def _build_list(self, parent):
+        self._scroll = ctk.CTkScrollableFrame(
+            parent, fg_color="transparent",
+            scrollbar_button_color=BORDER2,
+            scrollbar_button_hover_color=BORDER2)
+        self._scroll.grid(row=2, column=0, sticky="nsew", padx=52, pady=(14, 0))
 
-    def _build_list(self):
-        # Column header
-        hdr = tk.Frame(self, bg=S1, height=28)
-        hdr.pack(fill="x")
-        hdr.pack_propagate(False)
-        col_kw = dict(bg=S1, fg=MUTE, font=("Consolas", 8, "bold"), anchor="w")
-        tk.Label(hdr, text="  ●  PLAT   TITLE", **col_kw).pack(side="left", padx=(12,0))
-        tk.Label(hdr, text="PROGRESS  ·  SPEED", **col_kw).pack(side="right", padx=(0, 130))
-        tk.Frame(self, bg=LINE, height=1).pack(fill="x")
+        self._empty = ctk.CTkFrame(self._scroll, fg_color=CARD,
+                                   corner_radius=10, border_width=1, border_color=BORDER)
+        self._empty.pack(fill="x")
+        ctk.CTkLabel(self._empty, text="🎬",
+            font=ctk.CTkFont(size=28), fg_color="transparent",
+            text_color=TEXT3).pack(pady=(20, 4))
+        ctk.CTkLabel(self._empty, text="Chưa có video nào",
+            font=ctk.CTkFont(family=FONT, size=15, weight="bold"),
+            fg_color="transparent", text_color=TEXT2).pack()
+        ctk.CTkLabel(self._empty,
+            text="Dán link vào ô trên và nhấn Tải xuống để bắt đầu",
+            font=ctk.CTkFont(family=FONT, size=12),
+            fg_color="transparent", text_color=TEXT3).pack(pady=(3, 20))
 
-        # Scrollable frame (plain tk for flat-list rows)
-        self._list_outer = ctk.CTkScrollableFrame(
-            self, fg_color=BG,
-            scrollbar_button_color=S2, scrollbar_button_hover_color=BORDER)
-        self._list_outer.pack(fill="both", expand=True)
+    # ── USP footer strip ──────────────────────────────────────────────────────
 
-        # Empty state
-        self._empty = tk.Frame(self._list_outer, bg=BG)
-        self._empty.pack(expand=True, pady=50)
-        tk.Label(self._empty, text="No downloads yet",
-            bg=BG, fg=MUTE, font=("Consolas", 13, "bold")).pack()
-        tk.Label(self._empty, text="paste a link above and press DOWNLOAD",
-            bg=BG, fg=MUTE, font=("Consolas", 10)).pack(pady=(6,0))
+    def _build_usp(self, parent):
+        usp = ctk.CTkFrame(parent, fg_color="transparent")
+        usp.grid(row=3, column=0, pady=(10, 18))
+        inner = ctk.CTkFrame(usp, fg_color="transparent")
+        inner.pack()
+        items = ["⚡  Tốc độ cao", "🛡  Riêng tư & Bảo mật", "✅  Miễn phí hoàn toàn"]
+        for i, txt in enumerate(items):
+            ctk.CTkLabel(inner, text=txt,
+                font=ctk.CTkFont(family=FONT, size=16), text_color=TEXT2,
+                fg_color="transparent").grid(row=0, column=i*2, padx=14)
+            if i < 2:
+                ctk.CTkLabel(inner, text="·", font=ctk.CTkFont(size=18),
+                    text_color=BORDER2, fg_color="transparent").grid(row=0, column=i*2+1)
 
-    # USP bottom bar ──────────────────────────────────────────────────────────
-
-    def _build_usp(self):
-        tk.Frame(self, bg=LINE, height=1).pack(fill="x")
-
-        bar = tk.Frame(self, bg=S1, height=44)
-        bar.pack(fill="x")
-        bar.pack_propagate(False)
-
-        items = [
-            ("⚡", "FAST", "Tốc độ tối đa"),
-            ("🛡", "PRIVATE", "Không lưu link"),
-            ("🌐", "500+", "Nền tảng hỗ trợ"),
-        ]
-        for i, (icon, label, desc) in enumerate(items):
-            if i > 0:
-                tk.Frame(bar, bg=LINE, width=1).pack(side="left", fill="y", pady=10)
-            cell = tk.Frame(bar, bg=S1)
-            cell.pack(side="left", expand=True, fill="both")
-            tk.Label(cell, text=f"{icon}  {label}",
-                bg=S1, fg=ACC, font=("Consolas", 10, "bold")).pack(pady=(7,1))
-            tk.Label(cell, text=desc,
-                bg=S1, fg=DIM, font=("Consolas", 8)).pack()
-
-    # ── Events ────────────────────────────────────────────────────────────────
-
-    def _on_resize(self, e):
-        if e.widget is self:
-            j = getattr(self, "_rjob", None)
-            if j: self.after_cancel(j)
-            self._rjob = self.after(100, self._render_header)
-
-    def _select(self, name: str):
-        self.current_platform = name
-        for n, color, short in PLAT:
-            btn = self._tab_btns[n]
-            if n == name:
-                btn.config(bg=_dim_hex(color, 0.22), fg=color)
-            else:
-                btn.config(bg=S1, fg=DIM)
+    # ── Download logic ────────────────────────────────────────────────────────
 
     def _download(self):
         url = self._entry.get().strip()
         if not url: return
         self._entry.delete(0, "end")
         self._empty.pack_forget()
+        task = DownloadTask(url, detect_platform(url))
+        card = DownloadCard(self._scroll, task, self)
+        card.pack(fill="x", pady=(0, 5))
+        threading.Thread(target=self._run, args=(task, card), daemon=True).start()
 
-        task = DownloadTask(url, self.current_platform)
-        row  = DownloadRow(self._list_outer, task, self)
-        row.pack(fill="x")
-
-        threading.Thread(target=self._run_download,
-                         args=(task, row), daemon=True).start()
-
-    # ── Worker ────────────────────────────────────────────────────────────────
-
-    def _run_download(self, task: DownloadTask, row: DownloadRow):
+    def _run(self, task: DownloadTask, card: DownloadCard):
         def hook(d):
             if task.cancel.is_set(): raise Exception("Cancelled")
             if d["status"] != "downloading": return
@@ -497,37 +496,41 @@ class VidGetApp(ctk.CTk):
             pct   = done / total * 100 if total else 0
             speed = d.get("_speed_str", "")
             if task.title == "Đang lấy thông tin…":
-                stem = Path(d.get("filename","")).stem
+                stem = Path(d.get("filename", "")).stem
                 if stem:
                     task.title = stem
-                    self.after(0, row.update_title, stem)
-            self.after(0, row.update_progress, pct, speed)
+                    self.after(0, card.update_title, stem)
+            self.after(0, card.update_progress, pct, speed)
 
         opts = {
             "outtmpl": str(DLDIR / "%(title)s.%(ext)s"),
-            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "format":  "bestvideo+bestaudio/best",
             "merge_output_format": "mp4",
             "progress_hooks": [hook],
             "quiet": True, "no_warnings": True,
             "socket_timeout": 30, "retries": 5,
-            "extractor_args": {
-                "youtube": {"player_client": ["ios","android","tv_embedded"]},
-            },
+            "fragment_retries": 10,
         }
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
-                info = ydl.extract_info(task.url, download=True)
-                task.title = info.get("title", task.url)
-                task.status = "done"
-                self.after(0, row.update_title, task.title)
-                self.after(0, row.mark_success)
+                info      = ydl.extract_info(task.url, download=True)
+                task.title    = info.get("title", task.url)
+                task.filesize = info.get("filesize") or info.get("filesize_approx", 0)
+                task.ext      = info.get("ext", "mp4")
+                task.status   = "done"
+                self.after(0, card.update_title, task.title)
+                self.after(0, card.mark_success, task.filesize, task.ext)
         except Exception as e:
             err = str(e)
             if "Cancelled" in err: return
             task.status = "failed"
-            if "Sign in" in err or "bot" in err.lower(): err = "YouTube đang chặn. Thử link khác."
-            elif "unavailable" in err.lower():           err = "Video không khả dụng."
-            self.after(0, row.mark_failed, err[:72])
+            if "Sign in" in err or "bot" in err.lower():
+                err = "YouTube đang bị chặn, thử lại sau."
+            elif "unavailable" in err.lower() or "private" in err.lower():
+                err = "Video không khả dụng hoặc bị giới hạn."
+            elif "ffmpeg" in err.lower():
+                err = "Không tìm thấy ffmpeg."
+            self.after(0, card.mark_failed, err[:60])
 
 
 if __name__ == "__main__":
