@@ -124,6 +124,9 @@ def _run_download(job_id: str, url: str):
         "progress_hooks": [hook],
         "quiet": True,
         "no_warnings": True,
+        "socket_timeout": 30,
+        "retries": 3,
+        "extractor_retries": 3,
     }
 
     try:
@@ -134,7 +137,15 @@ def _run_download(job_id: str, url: str):
             job["status"] = "done"
     except Exception as e:
         job["status"] = "error"
-        job["error"] = str(e)
+        err = str(e)
+        # Surface a friendlier message for common yt-dlp errors
+        if "Sign in" in err or "bot" in err.lower() or "429" in err:
+            err = "YouTube yêu cầu xác thực hoặc đang chặn server. Thử lại sau."
+        elif "unavailable" in err.lower() or "private" in err.lower():
+            err = "Video không khả dụng hoặc bị giới hạn."
+        elif "ffmpeg" in err.lower():
+            err = "ffmpeg không tìm thấy trên server."
+        job["error"] = err
 
 
 def _find_video(folder: Path) -> Path | None:

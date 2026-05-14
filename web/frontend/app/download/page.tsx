@@ -24,6 +24,7 @@ interface Job {
   speed: string
   status: Status
   downloadUrl?: string
+  errorMsg?: string
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -80,17 +81,17 @@ export default function DownloadPage() {
           })
           es.close()
         } else if (d.type === "error") {
-          updateJob(localId, { status: "error" })
+          updateJob(localId, { status: "error", errorMsg: d.message })
           es.close()
         }
       }
 
       es.onerror = () => {
-        updateJob(localId, { status: "error" })
+        updateJob(localId, { status: "error", errorMsg: "Mất kết nối đến server." })
         es.close()
       }
-    } catch {
-      updateJob(localId, { status: "error" })
+    } catch (err) {
+      updateJob(localId, { status: "error", errorMsg: err instanceof Error ? err.message : "Lỗi không xác định." })
     }
   }
 
@@ -259,8 +260,8 @@ function JobRow({ job, onRetry }: { job: Job; onRetry: () => void }) {
         )}
 
         {job.status === "error" && (
-          <p className="text-[11px] text-red-400 mt-0.5">
-            Tải thất bại · Nhấn <span className="font-medium">Thử lại</span>
+          <p className="text-[11px] text-red-400 mt-0.5 break-words">
+            {job.errorMsg || "Tải thất bại"} · Nhấn <span className="font-medium">Thử lại</span>
           </p>
         )}
       </div>
