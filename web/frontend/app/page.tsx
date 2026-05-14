@@ -298,7 +298,7 @@ export default function HomePage() {
           {[
             { icon: "⚡", text: "Tốc độ siêu nhanh" },
             { icon: "✨", text: "Chất lượng tối đa" },
-            { icon: "🎁", text: "Miễn phí hoàn toàn" },
+            { icon: "🪙", text: "Miễn phí hoàn toàn" },
           ].map((s) => (
             <div key={s.text}>
               <p className="text-3xl mb-2">{s.icon}</p>
