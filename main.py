@@ -5,35 +5,36 @@ import tkinter as tk
 from pathlib import Path
 
 import customtkinter as ctk
-from PIL import Image, ImageDraw, ImageFilter, ImageTk
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageTk
 import yt_dlp
 
-# ── Palette (matches web app) ─────────────────────────────────────────────────
+# ── Palette — Apple dark + violet accent ──────────────────────────────────────
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-BG      = "#07070f"
-SURF    = "#0e0e1c"
-SURF2   = "#13132a"
-BORDER  = "#1d1d38"
+BG      = "#08080f"   # near-black canvas
+SURF    = "#111120"   # card surface
+SURF2   = "#18182c"   # input / inner surface
+BORDER  = "#22223a"   # ultra-subtle border
+SEP     = "#1a1a2e"   # divider
 VIOLET  = "#7c3aed"
-VIOLET2 = "#6d28d9"
-VIOLET3 = "#4c1d95"
-TEXT    = "#e2e8f0"
-DIM     = "#64748b"
-MUTE    = "#2d2d52"
-GREEN   = "#22c55e"
-RED     = "#ef4444"
-AMBER   = "#f59e0b"
+V_LIGHT = "#9d6ff7"   # lighter violet for hover / text
+V_DIM   = "#3b1a78"   # dark violet tint for bg
+TEXT    = "#f0f0f8"   # primary label
+LABEL2  = "#8e8ea8"   # secondary label
+LABEL3  = "#44445a"   # tertiary / muted
+GREEN   = "#30d158"   # Apple green
+RED     = "#ff453a"   # Apple red
+AMBER   = "#ffd60a"   # Apple yellow
 
 PLATFORMS = [
-    ("YouTube",   "#FF4444"),
-    ("TikTok",    "#00d4d4"),
-    ("Facebook",  "#4090f7"),
-    ("Instagram", "#e1306c"),
-    ("Twitter/X", "#1d9bf0"),
-    ("Khác",      "#a78bfa"),
+    ("YouTube",   "#ff3b30"),
+    ("TikTok",    "#30d6c8"),
+    ("Facebook",  "#0a84ff"),
+    ("Instagram", "#ff2d55"),
+    ("Twitter/X", "#0a84ff"),
+    ("Khác",      "#bf5af2"),
 ]
 PCOLORS = dict(PLATFORMS)
 
@@ -41,65 +42,90 @@ DOWNLOAD_DIR = Path.home() / "Downloads" / "VidGet"
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ── PIL helpers ───────────────────────────────────────────────────────────────
+# ── PIL utilities ─────────────────────────────────────────────────────────────
 
 def _hex(h: str):
     h = h.lstrip("#")
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
 def _lerp(a, b, t):
-    return tuple(int(a[i] + (b[i]-a[i]) * t) for i in range(3))
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+def _dim(hex_color: str, f: float = 0.18) -> str:
+    r, g, b = _hex(hex_color)
+    return f"#{int(r*f):02x}{int(g*f):02x}{int(b*f):02x}"
+
 
 def make_hero_bg(w: int, h: int) -> ImageTk.PhotoImage:
+    """Very subtle gradient — Apple-style near-invisible depth."""
     img = Image.new("RGB", (w, h))
-    c1, c2 = _hex("#07070f"), _hex("#0e0c2e")
+    c1, c2 = _hex("#08080f"), _hex("#0c0b1e")
     for y in range(h):
-        img.paste(Image.new("RGB", (w, 1), _lerp(c1, c2, y/h)), (0, y))
+        img.paste(Image.new("RGB", (w, 1), _lerp(c1, c2, y / h)), (0, y))
 
-    # violet glow orb top-centre
+    # Single soft violet orb, centred
     orb = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    od  = ImageDraw.Draw(orb)
-    od.ellipse([w//2-260, -140, w//2+260, 180], fill=(124, 58, 237, 38))
-    orb = orb.filter(ImageFilter.GaussianBlur(70))
-    img.paste(orb, (0, 0), orb)
-
-    # blue orb right
-    orb2 = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    od2  = ImageDraw.Draw(orb2)
-    od2.ellipse([w-300, -80, w+80, 200], fill=(56, 100, 220, 28))
-    orb2 = orb2.filter(ImageFilter.GaussianBlur(60))
-    img.paste(orb2, (0, 0), orb2)
-
+    d   = ImageDraw.Draw(orb)
+    d.ellipse([w//2 - 220, -60, w//2 + 220, h + 20], fill=(108, 50, 210, 35))
+    orb = orb.filter(ImageFilter.GaussianBlur(80))
+    img.paste(orb, mask=orb.split()[3])
     return ImageTk.PhotoImage(img)
 
-def make_glow_btn(w: int, h: int, hex_color: str) -> ImageTk.PhotoImage:
-    pad = 28
-    img = Image.new("RGBA", (w + pad*2, h + pad*2), (0, 0, 0, 0))
+
+def make_app_icon(size: int = 72) -> ImageTk.PhotoImage:
+    """iOS-style rounded-square app icon with gradient fill and V mark."""
+    pad = 8
+    total = size + pad * 2
+
+    # Gradient fill (violet → indigo)
+    base = Image.new("RGB", (size, size))
+    d    = ImageDraw.Draw(base)
+    c1, c2 = _hex("#9b59f5"), _hex("#5b2bd6")
+    for y in range(size):
+        base.paste(Image.new("RGB", (size, 1), _lerp(c1, c2, y / size)), (0, y))
+
+    # iOS corner radius mask
+    r    = size // 4
+    mask = Image.new("L", (size, size), 0)
+    md   = ImageDraw.Draw(mask)
+    md.rounded_rectangle([0, 0, size - 1, size - 1], radius=r, fill=255)
+
+    # Compose icon with transparent bg
+    icon = Image.new("RGBA", (total, total), (0, 0, 0, 0))
+    base_rgba = base.convert("RGBA")
+    icon.paste(base_rgba, (pad, pad), mask)
+
+    # Soft outer glow
+    glow = icon.filter(ImageFilter.GaussianBlur(pad))
+    gl, gg, gb, ga = glow.split()
+    ga   = ga.point(lambda x: int(x * 0.55))
+    glow = Image.merge("RGBA", (gl, gg, gb, ga))
+    final = Image.new("RGBA", (total, total), (0, 0, 0, 0))
+    final.paste(glow, mask=glow.split()[3])
+    final.paste(icon, mask=icon.split()[3])
+
+    # V lettermark — clean thick strokes
+    fd  = ImageDraw.Draw(final)
+    cx  = total // 2
+    cy  = total // 2 + size // 16
+    arm = size * 0.21
+    lw  = max(4, size // 9)
+    pts_l = [(cx - arm, cy - arm * 0.75), (cx, cy + arm * 0.65)]
+    pts_r = [(cx + arm, cy - arm * 0.75), (cx, cy + arm * 0.65)]
+    fd.line(pts_l, fill=(255, 255, 255, 245), width=lw)
+    fd.line(pts_r, fill=(255, 255, 255, 245), width=lw)
+
+    return ImageTk.PhotoImage(final)
+
+
+def make_btn_glow(w: int, h: int) -> ImageTk.PhotoImage:
+    """Soft violet aura under the primary button — Apple-like subtle glow."""
+    pad = 24
+    img = Image.new("RGBA", (w + pad * 2, h + pad * 2), (0, 0, 0, 0))
     d   = ImageDraw.Draw(img)
-    r, g, b = _hex(hex_color)
-    d.rounded_rectangle([pad, pad, w+pad, h+pad], radius=12, fill=(r, g, b, 140))
-    img = img.filter(ImageFilter.GaussianBlur(18))
+    d.rounded_rectangle([pad, pad, w + pad, h + pad], radius=14, fill=(124, 58, 237, 120))
+    img = img.filter(ImageFilter.GaussianBlur(20))
     return ImageTk.PhotoImage(img)
-
-def make_icon(size: int = 48) -> ImageTk.PhotoImage:
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    d   = ImageDraw.Draw(img)
-    # Outer glow
-    d.ellipse([0, 0, size-1, size-1], fill=(124, 58, 237, 50))
-    # Inner circle
-    p = 6
-    d.ellipse([p, p, size-1-p, size-1-p], fill=(124, 58, 237, 255))
-    # V mark
-    cx, cy = size//2, size//2
-    arm = size * 0.22
-    d.line([(cx - arm, cy - arm*0.6), (cx, cy + arm*0.7)], fill="white", width=round(size*0.1))
-    d.line([(cx + arm, cy - arm*0.6), (cx, cy + arm*0.7)], fill="white", width=round(size*0.1))
-    img = img.filter(ImageFilter.SMOOTH)
-    return ImageTk.PhotoImage(img)
-
-def _dim_color(hex_color: str, factor: float = 0.18) -> str:
-    r, g, b = _hex(hex_color)
-    return f"#{int(r*factor):02x}{int(g*factor):02x}{int(b*factor):02x}"
 
 
 # ── Download task ─────────────────────────────────────────────────────────────
@@ -113,63 +139,73 @@ class DownloadTask:
         self.cancel   = threading.Event()
 
 
-# ── Download row ──────────────────────────────────────────────────────────────
+# ── Download row (Apple card style) ──────────────────────────────────────────
 
 class DownloadRow(ctk.CTkFrame):
     def __init__(self, parent, task: DownloadTask, app, **kw):
-        super().__init__(parent, fg_color=SURF, corner_radius=14,
-                         border_width=1, border_color=BORDER, **kw)
+        super().__init__(
+            parent,
+            fg_color=SURF,
+            corner_radius=16,
+            border_width=1,
+            border_color=BORDER,
+            **kw,
+        )
         self.task  = task
         self.app   = app
-        self.color = PCOLORS.get(task.platform, "#a78bfa")
+        self.color = PCOLORS.get(task.platform, "#bf5af2")
         self._build()
 
     def _build(self):
-        # Left accent stripe
-        tk.Frame(self, width=4, bg=self.color).pack(side="left", fill="y")
+        # Left accent
+        tk.Frame(self, width=3, bg=self.color).pack(side="left", fill="y")
 
-        # Platform badge
+        # Badge
         ctk.CTkLabel(
             self,
             text=self.task.platform[:2].upper(),
-            width=40, height=40, corner_radius=10,
-            fg_color=_dim_color(self.color, 0.2),
+            width=42, height=42,
+            corner_radius=12,
+            fg_color=_dim(self.color, 0.22),
             text_color=self.color,
             font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"),
-        ).pack(side="left", padx=(10, 0), pady=14)
+        ).pack(side="left", padx=(12, 0), pady=14)
 
-        # Right buttons (packed before center to not get squeezed)
+        # Action buttons (right-side, packed before center)
         self._btns = ctk.CTkFrame(self, fg_color="transparent")
         self._btns.pack(side="right", padx=(0, 14), pady=14)
 
         self.stop_btn = ctk.CTkButton(
-            self._btns, text="■  Stop",
-            width=86, height=30, corner_radius=8,
-            font=ctk.CTkFont(size=11, weight="bold"),
-            fg_color="#3b0a0a", hover_color="#7f1d1d", text_color="#fca5a5",
+            self._btns, text="Stop",
+            width=72, height=28, corner_radius=8,
+            font=ctk.CTkFont(size=11),
+            fg_color="#2d0a0a", hover_color="#5a1010", text_color="#ff6b6b",
+            border_width=1, border_color="#5a1010",
             command=self._stop,
         )
         self.stop_btn.pack()
 
         self.open_btn = ctk.CTkButton(
-            self._btns, text="📁  Mở thư mục",
-            width=114, height=30, corner_radius=8,
+            self._btns, text="Mở thư mục",
+            width=96, height=28, corner_radius=8,
             font=ctk.CTkFont(size=11),
-            fg_color="#0c2340", hover_color="#1e3a5f", text_color="#93c5fd",
+            fg_color="#0a1f35", hover_color="#0d2a47", text_color="#5ac8fa",
+            border_width=1, border_color="#0d2a47",
             command=self._open_folder,
         )
 
         self.retry_btn = ctk.CTkButton(
-            self._btns, text="↺  Thử lại",
-            width=86, height=30, corner_radius=8,
+            self._btns, text="Thử lại",
+            width=72, height=28, corner_radius=8,
             font=ctk.CTkFont(size=11),
-            fg_color="#2d1a00", hover_color="#451a03", text_color="#fcd34d",
+            fg_color="#261500", hover_color="#3d2000", text_color=AMBER,
+            border_width=1, border_color="#3d2000",
             command=self._retry,
         )
 
-        # Center: title + status + progress
+        # Center content
         mid = ctk.CTkFrame(self, fg_color="transparent")
-        mid.pack(side="left", fill="both", expand=True, padx=(10, 8), pady=12)
+        mid.pack(side="left", fill="both", expand=True, padx=(12, 8), pady=13)
 
         self.title_lbl = ctk.CTkLabel(
             mid, text=self.task.title, anchor="w",
@@ -179,45 +215,49 @@ class DownloadRow(ctk.CTkFrame):
         self.title_lbl.pack(fill="x")
 
         self.sub_lbl = ctk.CTkLabel(
-            mid, text="Đang chuẩn bị...", anchor="w",
-            font=ctk.CTkFont(size=11), text_color=DIM,
+            mid, text="Đang chuẩn bị…", anchor="w",
+            font=ctk.CTkFont(size=11),
+            text_color=LABEL2,
         )
-        self.sub_lbl.pack(fill="x", pady=(2, 5))
+        self.sub_lbl.pack(fill="x", pady=(2, 6))
 
-        self.progress = ctk.CTkProgressBar(
-            mid, height=4, corner_radius=2,
+        self.bar = ctk.CTkProgressBar(
+            mid, height=3, corner_radius=2,
             fg_color=SURF2, progress_color=self.color,
         )
-        self.progress.set(0)
-        self.progress.pack(fill="x")
+        self.bar.set(0)
+        self.bar.pack(fill="x")
+
+    # ── Updates ──────────────────────────────────────────────────────────────
 
     def update_title(self, title: str):
-        short = (title[:72] + "…") if len(title) > 72 else title
-        self.title_lbl.configure(text=short)
+        self.title_lbl.configure(text=(title[:70] + "…") if len(title) > 70 else title)
 
     def update_progress(self, pct: float, speed: str = ""):
-        self.progress.set(pct / 100)
-        label = f"{pct:.0f}%"
+        self.bar.set(pct / 100)
+        txt = f"{pct:.0f}%"
         if speed:
-            label += f"  ·  {speed}"
-        self.sub_lbl.configure(text=label, text_color=DIM)
+            txt += f"  ·  {speed}"
+        self.sub_lbl.configure(text=txt, text_color=LABEL2)
 
     def mark_success(self):
-        self.progress.set(1.0)
-        self.progress.configure(progress_color=GREEN)
-        self.sub_lbl.configure(text="✓  Hoàn thành", text_color=GREEN)
+        self.bar.set(1.0)
+        self.bar.configure(progress_color=GREEN)
+        self.sub_lbl.configure(text="Hoàn thành", text_color=GREEN)
         self.stop_btn.pack_forget()
         self.open_btn.pack()
 
     def mark_failed(self, msg: str = ""):
-        self.progress.configure(progress_color=RED)
-        self.sub_lbl.configure(text=f"✗  {msg or 'Tải thất bại'}"[:80], text_color=RED)
+        self.bar.configure(progress_color=RED)
+        self.sub_lbl.configure(text=msg or "Tải thất bại", text_color=RED)
         self.stop_btn.pack_forget()
         self.retry_btn.pack()
 
+    # ── Actions ───────────────────────────────────────────────────────────────
+
     def _stop(self):
         self.task.cancel.set()
-        self.sub_lbl.configure(text="Đã hủy", text_color=DIM)
+        self.sub_lbl.configure(text="Đã hủy", text_color=LABEL3)
         self.stop_btn.pack_forget()
 
     def _open_folder(self):
@@ -226,9 +266,9 @@ class DownloadRow(ctk.CTkFrame):
     def _retry(self):
         self.task.cancel.clear()
         self.task.status = "pending"
-        self.progress.set(0)
-        self.progress.configure(progress_color=self.color)
-        self.sub_lbl.configure(text="Đang chuẩn bị...", text_color=DIM)
+        self.bar.set(0)
+        self.bar.configure(progress_color=self.color)
+        self.sub_lbl.configure(text="Đang chuẩn bị…", text_color=LABEL2)
         self.retry_btn.pack_forget()
         self.stop_btn.pack()
         threading.Thread(
@@ -236,44 +276,44 @@ class DownloadRow(ctk.CTkFrame):
         ).start()
 
 
-# ── App window ────────────────────────────────────────────────────────────────
+# ── Main window ───────────────────────────────────────────────────────────────
 
 class VidGetApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("VidGet")
-        self.geometry("1000x760")
-        self.minsize(780, 560)
+        self.geometry("960x740")
+        self.minsize(760, 560)
         self.configure(fg_color=BG)
         self.current_platform = "YouTube"
         self._tab_btns: dict[str, ctk.CTkButton] = {}
         self._hero_photo = None
-        self._glow_photo = None
         self._icon_photo = None
+        self._glow_photo = None
         self._build_ui()
         self.bind("<Configure>", self._on_resize)
 
-    # ── UI construction ───────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────────────────
 
     def _build_ui(self):
         self._build_hero()
-        self._build_usp()
-        ctk.CTkFrame(self, height=1, fg_color=BORDER).pack(fill="x")
         self._build_tabs()
         self._build_input()
-        self._build_list()
+        self._build_list()   # expands to fill space
+        self._build_usp()    # pinned at bottom
 
-    # Hero (gradient canvas + logo + title + tagline)
+    # ── Hero ─────────────────────────────────────────────────────────────────
+
     def _build_hero(self):
-        self._hero_canvas = tk.Canvas(self, height=168, highlightthickness=0, bd=0)
-        self._hero_canvas.pack(fill="x")
+        self._hero_cv = tk.Canvas(self, height=186, highlightthickness=0, bd=0)
+        self._hero_cv.pack(fill="x")
         self.after(60, self._render_hero)
 
-    def _render_hero(self, _event=None):
-        cv = self._hero_canvas
+    def _render_hero(self, _=None):
+        cv = self._hero_cv
         w  = cv.winfo_width()
         h  = cv.winfo_height()
-        if w < 2:
+        if w < 4:
             self.after(80, self._render_hero)
             return
 
@@ -283,176 +323,178 @@ class VidGetApp(ctk.CTk):
         self._hero_photo = make_hero_bg(w, h)
         cv.create_image(0, 0, anchor="nw", image=self._hero_photo)
 
-        # ── Logo icon ──
-        self._icon_photo = make_icon(52)
-        cv.create_image(36, h//2, anchor="center", image=self._icon_photo)
+        cx = w // 2
 
-        # ── Title: "VidGet" ──
-        cv.create_text(68, h//2 - 20, text="Vid", anchor="w",
-            fill=TEXT, font=("Segoe UI", 28, "bold"))
-        # Measure "Vid" text width (approx)
-        vid_w = 52
-        cv.create_text(68 + vid_w, h//2 - 20, text="Get", anchor="w",
-            fill=VIOLET, font=("Segoe UI", 28, "bold"))
+        # App icon — centred
+        self._icon_photo = make_app_icon(64)
+        icon_y = 58
+        cv.create_image(cx, icon_y, anchor="center", image=self._icon_photo)
 
-        # ── Tagline ──
-        cv.create_text(68, h//2 + 10, anchor="w",
+        # App name — single centred text, two-colour trick via two anchored texts
+        # Measure approx: "Vid" in Segoe UI 30 bold ≈ 56px wide
+        half_title = 56
+        cv.create_text(cx - 1, icon_y + 54, text="Vid",
+            anchor="e", fill=TEXT,   font=("Segoe UI", 28, "bold"))
+        cv.create_text(cx + 1, icon_y + 54, text="Get",
+            anchor="w", fill=V_LIGHT, font=("Segoe UI", 28, "bold"))
+
+        # Tagline
+        cv.create_text(cx, icon_y + 84,
             text="Tải video từ mọi nền tảng · Nhanh · Miễn phí · Không giới hạn",
-            fill=DIM, font=("Segoe UI", 11))
+            fill=LABEL2, font=("Segoe UI", 11), anchor="center")
 
-        # ── Badge "Free · No signup" ──
-        badge_x, badge_y = w - 24, h//2
-        cv.create_text(badge_x, badge_y - 8, anchor="e",
-            text="✦  Miễn phí · Không đăng ký · Không quảng cáo",
-            fill="#4c1d95", font=("Segoe UI", 10, "bold"))
-        cv.create_text(badge_x, badge_y + 12, anchor="e",
-            text=f"📁  {DOWNLOAD_DIR}",
-            fill=MUTE, font=("Segoe UI", 9))
+        # Thin horizontal rule at bottom of hero
+        cv.create_line(0, h - 1, w, h - 1, fill=SEP)
 
-    # USP row
-    def _build_usp(self):
-        usp_data = [
-            ("⚡", "Tốc độ tối đa",     "Không giới hạn băng thông,\nkhông hàng chờ."),
-            ("🛡", "Riêng tư & An toàn", "Link không lưu lại.\nDữ liệu là của bạn."),
-            ("🌐", "500+ Nền tảng",      "YouTube, TikTok, Facebook,\nInstagram và hàng trăm site khác."),
-        ]
+    # ── Platform tabs (Apple segmented feel) ─────────────────────────────────
 
-        row = ctk.CTkFrame(self, fg_color="transparent")
-        row.pack(fill="x", padx=24, pady=(14, 12))
-        row.grid_columnconfigure((0, 1, 2), weight=1, uniform="usp")
-
-        for i, (icon, title, desc) in enumerate(usp_data):
-            card = ctk.CTkFrame(
-                row, fg_color=SURF, corner_radius=14,
-                border_width=1, border_color=BORDER,
-            )
-            card.grid(row=0, column=i, padx=5, sticky="nsew")
-
-            inner = ctk.CTkFrame(card, fg_color="transparent")
-            inner.pack(padx=18, pady=14, anchor="w")
-
-            ctk.CTkLabel(inner, text=icon,
-                font=ctk.CTkFont(size=22), text_color=TEXT
-            ).pack(anchor="w")
-
-            ctk.CTkLabel(inner, text=title,
-                font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
-                text_color=TEXT,
-            ).pack(anchor="w", pady=(4, 0))
-
-            ctk.CTkLabel(inner, text=desc,
-                font=ctk.CTkFont(size=11), text_color=DIM,
-                justify="left", anchor="w",
-            ).pack(anchor="w", pady=(3, 0))
-
-    # Platform tabs
     def _build_tabs(self):
-        row = ctk.CTkFrame(self, fg_color="transparent")
-        row.pack(fill="x", padx=24, pady=(14, 0))
+        outer = ctk.CTkFrame(self, fg_color="transparent")
+        outer.pack(fill="x", padx=26, pady=(16, 0))
 
-        ctk.CTkLabel(row, text="PLATFORM",
+        ctk.CTkLabel(outer, text="PLATFORM",
             font=ctk.CTkFont(size=10, weight="bold"),
-            text_color=MUTE,
-        ).pack(side="left", padx=(0, 12))
+            text_color=LABEL3).pack(side="left", padx=(0, 14))
 
         for name, color in PLATFORMS:
             btn = ctk.CTkButton(
-                row, text=name, width=90, height=30, corner_radius=15,
-                font=ctk.CTkFont(size=12),
+                outer, text=name,
+                width=86, height=28, corner_radius=14,
+                font=ctk.CTkFont(size=11),
                 fg_color=SURF2, hover_color=BORDER,
-                text_color=DIM, border_width=1, border_color=BORDER,
+                text_color=LABEL2,
+                border_width=1, border_color=BORDER,
                 command=lambda p=name: self._select_platform(p),
             )
-            btn.pack(side="left", padx=3)
+            btn.pack(side="left", padx=2)
             self._tab_btns[name] = btn
 
         self._select_platform("YouTube")
 
-    # URL input with glowing button
+    # ── URL input + glow download button ─────────────────────────────────────
+
     def _build_input(self):
         wrap = ctk.CTkFrame(self, fg_color="transparent")
-        wrap.pack(fill="x", padx=24, pady=(12, 0))
+        wrap.pack(fill="x", padx=26, pady=(12, 0))
 
-        card = ctk.CTkFrame(wrap, fg_color=SURF, corner_radius=16,
-                            border_width=1, border_color=BORDER)
-        card.pack(fill="x")
+        # Input pill — Apple search-bar style
+        bar = ctk.CTkFrame(wrap, fg_color=SURF2, corner_radius=14,
+                           border_width=1, border_color=BORDER)
+        bar.pack(fill="x")
+
+        # Search icon
+        ctk.CTkLabel(bar, text="⌕",
+            font=ctk.CTkFont(size=18), text_color=LABEL3,
+            fg_color="transparent").pack(side="left", padx=(14, 0))
 
         self.url_entry = ctk.CTkEntry(
-            card,
-            placeholder_text="  Dán link video vào đây…",
-            height=54, border_width=0, fg_color="transparent",
-            font=ctk.CTkFont(family="Segoe UI", size=14),
-            text_color=TEXT, placeholder_text_color=MUTE,
+            bar,
+            placeholder_text="Dán link video vào đây…",
+            height=48, border_width=0,
+            fg_color="transparent",
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            text_color=TEXT,
+            placeholder_text_color=LABEL3,
         )
-        self.url_entry.pack(side="left", fill="x", expand=True, padx=(8, 0), pady=7)
+        self.url_entry.pack(side="left", fill="x", expand=True, padx=(6, 0), pady=5)
         self.url_entry.bind("<Return>", lambda _: self._on_download())
 
         # Glow button wrapper
-        btn_wrap = ctk.CTkFrame(card, fg_color="transparent")
-        btn_wrap.pack(side="right", padx=8, pady=7)
+        BW, BH = 140, 38
+        pad = 20
+        self._glow_cv = tk.Canvas(
+            bar, width=BW + pad * 2, height=BH + pad * 2,
+            bg=SURF2, highlightthickness=0,
+        )
+        self._glow_cv.pack(side="right", padx=6, pady=5)
 
-        BW, BH = 152, 42
-        self._glow_canvas = tk.Canvas(btn_wrap, width=BW+34, height=BH+34,
-                                      bg=SURF, highlightthickness=0)
-        self._glow_canvas.pack()
-
-        self._glow_photo = make_glow_btn(BW, BH, VIOLET)
-        self._glow_canvas.create_image((BW+34)//2, (BH+34)//2,
-                                       image=self._glow_photo)
+        self._glow_photo = make_btn_glow(BW, BH)
+        self._glow_cv.create_image((BW + pad * 2) // 2, (BH + pad * 2) // 2,
+                                   image=self._glow_photo)
 
         self.dl_btn = ctk.CTkButton(
-            self._glow_canvas, text="⬇  Tải xuống",
+            self._glow_cv, text="⬇  Tải xuống",
             width=BW, height=BH, corner_radius=12,
-            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
-            fg_color=VIOLET, hover_color=VIOLET2, text_color="white",
+            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            fg_color=VIOLET, hover_color="#6d28d9", text_color="white",
             command=self._on_download,
         )
-        self._glow_canvas.create_window((BW+34)//2, (BH+34)//2, window=self.dl_btn)
+        self._glow_cv.create_window(
+            (BW + pad * 2) // 2, (BH + pad * 2) // 2, window=self.dl_btn
+        )
 
-    # Scrollable list
+    # ── Scrollable download list ──────────────────────────────────────────────
+
     def _build_list(self):
-        # Column header
-        hdr = ctk.CTkFrame(self, fg_color="transparent", height=22)
-        hdr.pack(fill="x", padx=28, pady=(10, 2))
-        hdr.pack_propagate(False)
-        hdr.grid_columnconfigure(1, weight=1)
-        kw = dict(font=ctk.CTkFont(size=10, weight="bold"), text_color=MUTE)
-        ctk.CTkLabel(hdr, text="NỀN TẢNG", width=58, anchor="w", **kw
-            ).grid(row=0, column=0, padx=(10, 0))
-        ctk.CTkLabel(hdr, text="TÊN VIDEO", anchor="w", **kw
-            ).grid(row=0, column=1, padx=12, sticky="ew")
-        ctk.CTkLabel(hdr, text="TIẾN ĐỘ", width=80, anchor="w", **kw
-            ).grid(row=0, column=2)
-        ctk.CTkLabel(hdr, text="THAO TÁC", width=118, anchor="center", **kw
-            ).grid(row=0, column=3, padx=(0, 14))
-
         self.scroll = ctk.CTkScrollableFrame(
             self, fg_color="transparent",
             scrollbar_button_color=SURF2,
             scrollbar_button_hover_color=BORDER,
         )
-        self.scroll.pack(fill="both", expand=True, padx=24, pady=(0, 16))
+        self.scroll.pack(fill="both", expand=True, padx=26, pady=(12, 0))
 
-        # Empty state
         self._empty = ctk.CTkFrame(self.scroll, fg_color="transparent")
-        self._empty.pack(expand=True, pady=50)
+        self._empty.pack(expand=True, pady=40)
 
         ctk.CTkLabel(self._empty, text="⬇",
-            font=ctk.CTkFont(size=40), text_color=MUTE).pack()
+            font=ctk.CTkFont(size=36), text_color=LABEL3).pack()
         ctk.CTkLabel(self._empty,
             text="Chưa có video nào",
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            text_color=DIM).pack(pady=(8, 2))
+            font=ctk.CTkFont(family="Segoe UI", size=15, weight="bold"),
+            text_color=LABEL2).pack(pady=(10, 3))
         ctk.CTkLabel(self._empty,
-            text="Dán link vào ô bên trên và nhấn Tải xuống để bắt đầu",
-            font=ctk.CTkFont(size=11), text_color=MUTE).pack()
+            text="Dán link vào ô bên trên và nhấn Tải xuống",
+            font=ctk.CTkFont(size=11), text_color=LABEL3).pack()
 
-    # ── Event handlers ────────────────────────────────────────────────────────
+    # ── USP strip — bottom ────────────────────────────────────────────────────
+
+    def _build_usp(self):
+        # Top separator
+        ctk.CTkFrame(self, height=1, fg_color=SEP).pack(fill="x")
+
+        usp_data = [
+            ("⚡", "Siêu nhanh",         "Không giới hạn tốc độ hay hàng chờ"),
+            ("🛡", "Riêng tư & An toàn", "Link không được lưu lại sau khi tải"),
+            ("🌐", "500+ Nền tảng",       "YouTube · TikTok · Facebook và nhiều hơn"),
+        ]
+
+        row = ctk.CTkFrame(self, fg_color="transparent")
+        row.pack(fill="x", padx=26, pady=(10, 14))
+        row.grid_columnconfigure((0, 1, 2), weight=1, uniform="usp")
+
+        for i, (icon, title, desc) in enumerate(usp_data):
+            cell = ctk.CTkFrame(row, fg_color="transparent")
+            cell.grid(row=0, column=i, sticky="nsew")
+
+            # Vertical left-border only for middle cell dividers
+            if i > 0:
+                tk.Frame(cell, width=1, bg=SEP).pack(side="left", fill="y", padx=(0, 14))
+
+            content = ctk.CTkFrame(cell, fg_color="transparent")
+            content.pack(side="left", padx=(0 if i == 0 else 0, 0), pady=4, anchor="center")
+
+            ctk.CTkLabel(content, text=icon,
+                font=ctk.CTkFont(size=18), text_color=TEXT
+            ).pack(anchor="w")
+
+            ctk.CTkLabel(content, text=title,
+                font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+                text_color=TEXT,
+            ).pack(anchor="w", pady=(3, 0))
+
+            ctk.CTkLabel(content, text=desc,
+                font=ctk.CTkFont(size=10),
+                text_color=LABEL2,
+            ).pack(anchor="w", pady=(2, 0))
+
+    # ── Events ────────────────────────────────────────────────────────────────
 
     def _on_resize(self, event):
         if event.widget is self:
-            self.after_cancel(getattr(self, "_resize_job", None) or "x")
-            self._resize_job = self.after(120, self._render_hero)
+            job = getattr(self, "_resize_job", None)
+            if job:
+                self.after_cancel(job)
+            self._resize_job = self.after(100, self._render_hero)
 
     def _select_platform(self, platform: str):
         self.current_platform = platform
@@ -460,9 +502,10 @@ class VidGetApp(ctk.CTk):
             btn = self._tab_btns[name]
             if name == platform:
                 btn.configure(text_color=color, border_color=color,
-                              fg_color=_dim_color(color, 0.18))
+                              fg_color=_dim(color, 0.2))
             else:
-                btn.configure(text_color=DIM, border_color=BORDER, fg_color=SURF2)
+                btn.configure(text_color=LABEL2, border_color=BORDER,
+                              fg_color=SURF2)
 
     def _on_download(self):
         url = self.url_entry.get().strip()
@@ -473,13 +516,13 @@ class VidGetApp(ctk.CTk):
 
         task = DownloadTask(url, self.current_platform)
         row  = DownloadRow(self.scroll, task, self)
-        row.pack(fill="x", pady=(0, 10))
+        row.pack(fill="x", pady=(0, 8))
 
         threading.Thread(
             target=self._run_download, args=(task, row), daemon=True
         ).start()
 
-    # ── Download worker ───────────────────────────────────────────────────────
+    # ── Worker ────────────────────────────────────────────────────────────────
 
     def _run_download(self, task: DownloadTask, row: DownloadRow):
         def hook(d: dict):
