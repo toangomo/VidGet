@@ -1,7 +1,9 @@
 import asyncio
+import base64
 import json
 import os
 import shutil
+import tempfile
 import threading
 import uuid
 from pathlib import Path
@@ -32,6 +34,18 @@ async def health():
 
 DOWNLOAD_DIR = Path(__file__).parent / "downloads"
 DOWNLOAD_DIR.mkdir(exist_ok=True)
+
+# Write YouTube cookies from env var to a temp file once at startup
+_COOKIES_FILE: str | None = None
+_cookies_b64 = os.getenv("YOUTUBE_COOKIES_B64", "").strip()
+if _cookies_b64:
+    try:
+        _tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".txt", delete=False)
+        _tmp.write(base64.b64decode(_cookies_b64))
+        _tmp.close()
+        _COOKIES_FILE = _tmp.name
+    except Exception:
+        pass
 
 jobs: dict[str, dict[str, Any]] = {}
 cancel_flags: dict[str, threading.Event] = {}
@@ -158,10 +172,13 @@ def _run_download(job_id: str, url: str):
         "no_playlist": True,
     }
 
-    # Use cookies file if provided (place cookies.txt next to main.py)
-    cookies_path = Path(__file__).parent / "cookies.txt"
-    if cookies_path.exists():
-        opts["cookiefile"] = str(cookies_path)
+    # Use cookies: env var (base64) takes priority, then local cookies.txt
+    if _COOKIES_FILE:
+        opts["cookiefile"] = _COOKIES_FILE
+    else:
+        local_cookies = Path(__file__).parent / "cookies.txt"
+        if local_cookies.exists():
+            opts["cookiefile"] = str(local_cookies)
 
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
