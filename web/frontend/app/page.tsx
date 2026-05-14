@@ -156,7 +156,7 @@ export default function HomePage() {
           </div>
 
           {/* Heading */}
-          <h1 className="text-center text-4xl sm:text-5xl md:text-[58px] font-extrabold leading-[1.1] tracking-tight mb-4">
+          <h1 className="text-center text-4xl sm:text-5xl md:text-[58px] font-extrabold leading-[1.43] tracking-tight mb-4">
             Tải video từ{" "}
             <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
               mọi nền tảng phổ biến
