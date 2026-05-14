@@ -32,8 +32,8 @@ app.add_middleware(
 async def health():
     return {"status": "ok"}
 
-DOWNLOAD_DIR = Path(__file__).parent / "downloads"
-DOWNLOAD_DIR.mkdir(exist_ok=True)
+DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "/tmp/vidget_downloads"))
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Write YouTube cookies from env var to a temp file once at startup
 _COOKIES_FILE: str | None = None
