@@ -156,18 +156,16 @@ def _run_download(job_id: str, url: str):
         "quiet": True,
         "no_warnings": True,
         "socket_timeout": 30,
-        "retries": 5,
-        "extractor_retries": 5,
+        "retries": 10,
+        "extractor_retries": 10,
+        "fragment_retries": 10,
         "geo_bypass": True,
-        "http_headers": {
-            "User-Agent": (
-                "com.google.ios.youtube/19.29.1 "
-                "(iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)"
-            ),
-        },
-        # ios client uses a separate API endpoint not subject to po_token/bot checks
         "extractor_args": {
-            "youtube": {"player_client": ["ios", "android", "tv_embedded"]},
+            "youtube": {
+                # tv_embedded & mweb avoid PO token requirement; ios is fast
+                "player_client": ["tv_embedded", "ios", "mweb", "web_creator"],
+                "player_skip": ["webpage", "js"],
+            },
         },
         "no_playlist": True,
     }
