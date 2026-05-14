@@ -142,8 +142,20 @@ def _run_download(job_id: str, url: str):
         "quiet": True,
         "no_warnings": True,
         "socket_timeout": 30,
-        "retries": 3,
-        "extractor_retries": 3,
+        "retries": 5,
+        "extractor_retries": 5,
+        "geo_bypass": True,
+        "http_headers": {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/125.0.0.0 Safari/537.36"
+            ),
+        },
+        # tv_embedded client bypasses YouTube bot/auth checks on servers
+        "extractor_args": {
+            "youtube": {"player_client": ["tv_embedded", "web"]},
+        },
     }
 
     try:
