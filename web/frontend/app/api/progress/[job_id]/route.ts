@@ -1,7 +1,14 @@
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const BACKEND = process.env.BACKEND_URL || "http://localhost:8000"
+function resolveBackend(): string {
+  const raw = (process.env.BACKEND_URL || "").trim()
+  if (!raw) return "http://localhost:8000"
+  const noScheme = raw.replace(/^https?:\/\//, "")
+  if (noScheme.includes(".railway.internal")) return `http://${noScheme}`
+  return `https://${noScheme}`
+}
+const BACKEND = resolveBackend()
 
 export async function GET(
   _req: Request,
