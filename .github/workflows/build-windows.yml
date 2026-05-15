@@ -32,13 +32,19 @@ jobs:
           pip install --upgrade pip
           pip install "customtkinter>=5.2.0" "Pillow>=10.0.0" "yt-dlp>=2024.1.1" pyinstaller
 
-      - name: Install ffmpeg
-        run: choco install ffmpeg -y
+      - name: Download ffmpeg static build
+        run: |
+          $progressPreference = 'silentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -OutFile ffmpeg.zip
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg_tmp
+          $ff = Get-ChildItem -Recurse ffmpeg_tmp -Filter "ffmpeg.exe" | Select-Object -First 1
+          Copy-Item $ff.FullName ffmpeg.exe
+          $fp = Get-ChildItem -Recurse ffmpeg_tmp -Filter "ffprobe.exe" | Select-Object -First 1
+          Copy-Item $fp.FullName ffprobe.exe
+          Remove-Item ffmpeg.zip; Remove-Item ffmpeg_tmp -Recurse -Force
 
       - name: Build VidGet.exe
         run: |
-          $ffmpeg  = (Get-Command ffmpeg).Source
-          $ffprobe = (Get-Command ffprobe).Source
           pyinstaller `
             --onefile `
             --windowed `
@@ -59,8 +65,8 @@ jobs:
             --hidden-import "encodings.latin_1" `
             --hidden-import "encodings.idna" `
             --collect-submodules encodings `
-            --add-binary "$ffmpeg;." `
-            --add-binary "$ffprobe;." `
+            --add-binary "ffmpeg.exe;." `
+            --add-binary "ffprobe.exe;." `
             --clean --noconfirm `
             main.py
 
