@@ -156,8 +156,8 @@ export default function HomePage() {
           </div>
 
           {/* Heading */}
-          <h1 className="text-center text-4xl sm:text-5xl md:text-[58px] font-extrabold leading-[2.15] tracking-tight mb-4">
-            Tải video từ{" "}
+          <h1 className="text-center text-4xl sm:text-5xl md:text-[58px] font-extrabold tracking-tight mb-4 flex flex-col items-center gap-4">
+            <span>Tải video từ</span>
             <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
               mọi nền tảng phổ biến
             </span>
@@ -280,7 +280,7 @@ export default function HomePage() {
                   <Apple size={18} />
                   <span>
                     <span className="block">Tải cho macOS</span>
-                    <span className="block text-xs font-normal opacity-60">VidGet.dmg · ~60 MB</span>
+                    <span className="block text-xs font-normal opacity-60">VidGet.dmg · ~34.8 MB</span>
                   </span>
                 </a>
               </div>
