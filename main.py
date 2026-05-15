@@ -1,6 +1,9 @@
 """VidGet Desktop — dark theme, compact single-line cards."""
 
 import os
+import platform
+import subprocess
+import sys
 import threading
 import tkinter as tk
 import tkinter.font as tkfont
@@ -47,6 +50,23 @@ PLAT_C = {
 DLDIR = Path.home() / "Downloads" / "VidGet"
 DLDIR.mkdir(parents=True, exist_ok=True)
 FONT  = "Segoe UI"
+
+def _ffmpeg_path() -> str:
+    if getattr(sys, "frozen", False):
+        base = sys._MEIPASS
+        for name in ("ffmpeg", "ffmpeg.exe"):
+            p = os.path.join(base, name)
+            if os.path.exists(p):
+                return p
+    return "ffmpeg"
+
+def _open_folder(path: str):
+    if platform.system() == "Darwin":
+        subprocess.run(["open", path])
+    elif platform.system() == "Windows":
+        os.startfile(path)
+    else:
+        subprocess.run(["xdg-open", path])
 _SPIN = ["◐", "◓", "◑", "◒"]
 _BG_RGB = (7, 7, 15)
 
@@ -291,7 +311,7 @@ class DownloadCard(ctk.CTkFrame):
             font=ctk.CTkFont(family=FONT, size=14, weight="bold"))
         self._stop_btn.place_forget()
 
-    def _open(self): os.startfile(str(DLDIR))
+    def _open(self): _open_folder(str(DLDIR))
 
     def _retry(self):
         self._anim_on = self._spinning = True
@@ -372,7 +392,7 @@ class VidGetApp(ctk.CTk):
             fg_color=VIO_BG, hover_color=_shade(VIO_BG, 1.25),
             text_color=VIO_LT, border_width=1,
             border_color=_tint(VIOLET, 0.40),
-            command=lambda: os.startfile(str(DLDIR)),
+            command=lambda: _open_folder(str(DLDIR)),
         ).pack(side="left", padx=(8, 10), pady=8)
 
     # ── Hero: pill badge + heading + subtitle + input ─────────────────────────
@@ -510,6 +530,7 @@ class VidGetApp(ctk.CTk):
             "quiet": True, "no_warnings": True,
             "socket_timeout": 30, "retries": 5,
             "fragment_retries": 10,
+            "ffmpeg_location": _ffmpeg_path(),
         }
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:

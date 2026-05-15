@@ -32,8 +32,13 @@ jobs:
           pip install --upgrade pip
           pip install "customtkinter>=5.2.0" "Pillow>=10.0.0" "yt-dlp>=2024.1.1" pyinstaller
 
+      - name: Install ffmpeg
+        run: brew install ffmpeg
+
       - name: Build .app bundle
         run: |
+          FFMPEG_BIN=$(which ffmpeg)
+          FFPROBE_BIN=$(which ffprobe)
           pyinstaller \
             --windowed \
             --name "VidGet" \
@@ -51,6 +56,8 @@ jobs:
             --hidden-import "encodings.latin_1" \
             --hidden-import "encodings.idna" \
             --collect-submodules encodings \
+            --add-binary "$FFMPEG_BIN:." \
+            --add-binary "$FFPROBE_BIN:." \
             --clean --noconfirm main.py
 
       - name: Package as DMG
