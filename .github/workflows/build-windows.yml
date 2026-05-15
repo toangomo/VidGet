@@ -1,0 +1,79 @@
+name: Build Windows App
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Upload to release tag (e.g. v1.0.0). Leave empty to skip.'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install "customtkinter>=5.2.0" "Pillow>=10.0.0" "yt-dlp>=2024.1.1" pyinstaller
+
+      - name: Install ffmpeg
+        run: choco install ffmpeg -y
+
+      - name: Build VidGet.exe
+        run: |
+          $ffmpeg  = (Get-Command ffmpeg).Source
+          $ffprobe = (Get-Command ffprobe).Source
+          pyinstaller `
+            --onefile `
+            --windowed `
+            --name "VidGet" `
+            --icon "VidGet.ico" `
+            --version-file "version_info.txt" `
+            --collect-all customtkinter `
+            --collect-all yt_dlp `
+            --hidden-import "PIL._tkinter_finder" `
+            --hidden-import "PIL.ImageTk" `
+            --hidden-import "tkinter" `
+            --hidden-import "tkinter.font" `
+            --hidden-import "tkinter.ttk" `
+            --hidden-import "encodings" `
+            --hidden-import "encodings.utf_8" `
+            --hidden-import "encodings.ascii" `
+            --hidden-import "encodings.cp1252" `
+            --hidden-import "encodings.latin_1" `
+            --hidden-import "encodings.idna" `
+            --collect-submodules encodings `
+            --add-binary "$ffmpeg;." `
+            --add-binary "$ffprobe;." `
+            --clean --noconfirm `
+            main.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VidGet-windows
+          path: dist/VidGet.exe
+          retention-days: 30
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/VidGet.exe
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
